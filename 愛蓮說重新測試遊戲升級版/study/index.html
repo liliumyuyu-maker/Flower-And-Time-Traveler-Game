@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="〈愛蓮說〉互動學習平台：透過測驗、思辨與創作，深入理解周敦頤的君子之道" />
+  <title>〈愛蓮說〉：不只愛蓮，更懂選擇｜八年級素養互動課</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="question_bank.js"></script>
+  <script src="database.js"></script>
+</head>
+
+<body>
+  <div class="progress-bar" role="progressbar" aria-label="學習進度">
+    <div class="progress-fill" id="progressFill" style="width:0"></div>
+  </div>
+
+  <header class="hero">
+    <div class="pill" style="margin:0 auto 10px; width:max-content;">八年級素養｜國文 × 互動學習</div>
+    <h1>〈愛蓮說〉：不只愛蓮，更懂選擇</h1>
+    <p>把周敦頤的理想「蓮之君子」，變成你我的生活練習。<br>先聽聽他怎麼說，然後開始探索屬於你的那朵花。</p>
+    <div class="actions">
+      <button class="ghost" onclick="document.getElementById('jumpStart').scrollIntoView({behavior:'smooth'})"
+        aria-label="開始探索課程">
+        開始探索 ⤵
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section aria-labelledby="teacher-panel-title">
+      <div class="kicker">TEACHER PANEL</div>
+      <h2 id="teacher-panel-title">老師面板：題庫切換與管理</h2>
+      <div class="grid cols-3">
+        <div class="card">
+          <label for="bankSelect"><strong>選擇題庫</strong></label>
+          <select id="bankSelect" aria-label="選擇題庫"></select>
+          <p class="small muted" id="bankMeta"></p>
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+            <button id="btnApplyBank">套用題庫</button>
+            <button class="secondary" id="btnViewBank">檢視題目</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>步驟 B：彙整全班數據</strong>
+          <p class="small muted">將學生繳交的多個 <code>.json</code> 檔拖曳至下方，即可匯出 CSV。</p>
+          <div id="dropZone" class="dropzone" style="margin-top:12px;">將檔案拖曳至此處</div>
+          <input type="file" id="filePicker" accept=".json" multiple hidden />
+          <div id="fileList" class="small" style="margin-top:8px;"></div>
+          <div style="margin-top:12px">
+            <button id="btnProcessCSV" class="special" disabled>⬇️ 匯出彙整 CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <strong>本機資料管理</strong>
+          <p class="small muted">管理您自己瀏覽器中的作答紀錄（非學生資料）</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+            <button id="btnExportTxt">匯出 TXT</button>
+            <button id="btnExportCSV">匯出 CSV</button>
+            <button class="secondary" id="btnClearAll">清空本機資料</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jumpStart" aria-labelledby="part1-title">
+      <div class="kicker">PART 1 <span class="status-badge todo" id="status1">待完成</span></div>
+      <h2 id="part1-title">你是哪一種花？— 5 題快問快答</h2>
+      <p class="lead">先認識自己，再走進文本。完成後會得到「牡丹／蓮／菊」的初步屬性分析（僅存本機）。</p>
+      <div class="quiz" id="quiz"></div>
+      <div id="quizResult" class="result" style="display:none;" role="status"></div>
+      <div class="center" style="margin-top:16px;">
+        <button id="btnSubmitQuiz">送出結果</button>
+        <button class="secondary" id="btnResetQuiz">重新填寫</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="part2-title">
+      <div class="kicker">PART 2</div>
+      <h2 id="part2-title">周敦頤的「人設」檔案 ＋「說」這個文體</h2>
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="tag">@濂溪先生</div>
+          <h3 style="margin:.3em 0 .5em;">周敦頤（1017–1073）</h3>
+          <p class="muted">理學開山｜蓮花首席粉絲｜氣象「光風霽月」</p>
+          <div class="timeline" style="margin-top:14px;">
+            <div class="tl-item"><strong>書院講學</strong>：窗外一池蓮，寫下短文抒懷，後世稱〈愛蓮說〉。</div>
+            <div class="tl-item"><strong>仕與退</strong>：曾為官，重民生；晚年退居濂溪，修身踐行。</div>
+            <div class="tl-item"><strong>影響</strong>：程頤程顥兄弟點讚轉發（比喻），對後世理學影響深遠。</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin:.3em 0 .5em;">什麼是「說」？</h3>
+          <p>古代一種「說理小文」。抓一個對象（如蓮）來談想法與價值。像現代的評論短文／開箱心得。</p>
+          <ul style="margin-top:12px;line-height:1.9">
+            <li><strong>目的</strong>：借物明志，傳遞價值。</li>
+            <li><strong>結構</strong>：點題 → 描寫／對比 → 抒情評斷。</li>
+            <li><strong>本課</strong>：以蓮喻君子，並與菊、牡丹對照。</li>
+          </ul>
+          <p class="note" style="margin-top:12px">延伸：也可寫你的「XX說」（下方有生成器）。</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="part3-title">
+      <div class="kicker">PART 3 <span class="status-badge todo" id="status3">待完成</span></div>
+      <h2 id="part3-title">一句一世界：點按關鍵語，開啟探問</h2>
+
+      <div class="quote" style="margin-bottom:14px;">
+        <div><span class="key" data-hint="tag-bjm" tabindex="0" role="button"
+            aria-expanded="false">菊</span>，花之隱逸者也；<span class="key" data-hint="tag-bjm" tabindex="0" role="button"
+            aria-expanded="false">牡丹</span>，花之富貴者也；<span class="key" data-hint="tag-bjm" tabindex="0" role="button"
+            aria-expanded="false">蓮</span>，花之君子者也。</div>
+        <div id="hint-bjm" class="hint">
+          <strong>對照組</strong>：用三花建立「價值座標」。<br>
+          你剛才在測驗中傾向哪一類？為什麼？可與同學互相說明各自選擇背後的「價值排序」。
+        </div>
+      </div>
+
+      <div class="quote" style="margin-bottom:14px;">
+        予獨愛蓮之<span class="key" data-hint="tag-yd" tabindex="0" role="button" aria-expanded="false">出淤泥而不染</span>，<span
+          class="key" data-hint="tag-yq" tabindex="0" role="button" aria-expanded="false">濯清漣而不妖</span>。
+        <div id="hint-yd" class="hint">
+          <strong>#出淤泥而不染</strong>：逆境裡不隨波逐流。
+          <button class="example-btn" onclick="showExample('mud')">看範例</button><br>
+          小任務：請寫下你遇過的「淤泥情境」（如：抄功課風氣、排擠）。你怎麼做？
+          <textarea id="inputMud" placeholder="我的淤泥情境…（僅存本機）" aria-label="淤泥情境輸入"></textarea>
+        </div>
+        <div id="hint-yq" class="hint">
+          <strong>#濯清漣而不妖</strong>：順境中仍不逢迎、不作假。
+          <button class="example-btn" onclick="showExample('notyao')">看範例</button><br>
+          <textarea id="inputNotYao" placeholder="我觀察到的『順境考驗』例子…" aria-label="順境考驗輸入"></textarea>
+        </div>
+      </div>
+
+      <div class="quote">
+        中通外直，不蔓不枝，香遠益清，亭亭淨植，可遠觀而不可褻玩焉。
+        <div class="lotus-diagram">
+          <svg class="lotus-svg" viewBox="0 0 120 120" aria-label="蓮花結構示意圖">
+            <defs>
+              <radialGradient id="g" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#a7f3d0" />
+                <stop offset="100%" stop-color="#34d399" />
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="80" r="28" fill="#7dd3fc" />
+            <rect x="58" y="30" width="4" height="50" rx="2" fill="#10b981" />
+            <ellipse cx="60" cy="30" rx="16" ry="10" fill="url(#g)" />
+            <ellipse cx="44" cy="36" rx="12" ry="8" fill="url(#g)" />
+            <ellipse cx="76" cy="36" rx="12" ry="8" fill="url(#g)" />
+          </svg>
+          <div>
+            <div class="legend" role="tablist">
+              <div class="legend-item" data-part="stem" tabindex="0" role="tab">中通外直</div>
+              <div class="legend-item" data-part="root" tabindex="0" role="tab">不蔓不枝</div>
+              <div class="legend-item" data-part="fragrance" tabindex="0" role="tab">香遠益清</div>
+              <div class="legend-item" data-part="posture" tabindex="0" role="tab">亭亭淨植</div>
+            </div>
+            <p class="small muted" id="morphNote" style="margin-top:10px;">點上方標籤，理解文字與植物學的對應</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="checkpoint-title">
+      <div class="kicker">CHECKPOINT</div>
+      <h2 id="checkpoint-title">小測驗：你抓到〈愛蓮說〉的要點了嗎？</h2>
+      <div id="miniQuiz"></div>
+      <div class="center" style="margin-top:16px;">
+        <button id="btnMiniSubmit">提交並看解答</button>
+      </div>
+      <div id="miniResult" class="result" style="display:none;margin-top:14px;" role="status"></div>
+    </section>
+
+    <section aria-labelledby="part4-title">
+      <div class="kicker">PART 4 <span class="status-badge todo" id="status4">待完成</span></div>
+      <h2 id="part4-title">思辨實驗室：當古文走進生活</h2>
+      <div class="grid cols-2">
+        <div class="card">
+          <strong>狀況一：</strong> 好友最近熱愛名牌與潮流，你覺得她「太牡丹」了。你會怎麼回應？
+          <button class="example-btn" onclick="showExample('lab1')">看範例</button>
+          <textarea id="lab1" placeholder="以菊／牡丹／蓮三種角度，留下三條留言…" aria-label="狀況一思考"></textarea>
+        </div>
+        <div class="card">
+          <strong>狀況二：</strong> 你因得獎被高度期待，開始想說場面話討好大家，覺得自己有點「妖」了。你會？
+          <button class="example-btn" onclick="showExample('lab2')">看範例</button>
+          <blockquote style="margin:10px 0" class="muted">無論在哪一種花的階段都沒關係，先問自己「我還記得想成為什麼樣的人嗎？」</blockquote>
+          <textarea id="lab2" placeholder="寫下你可行的做法：如何在順境也不作假…" aria-label="狀況二思考"></textarea>
+        </div>
+      </div>
+      <div class="center" style="margin-top:16px;">
+        <button id="btnSaveLab">儲存到本機</button>
+        <button class="secondary" id="btnClearLab">清空</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="part5-title">
+      <div class="kicker">PART 5 <span class="status-badge todo" id="status5">待完成</span></div>
+      <h2 id="part5-title">我的「＿＿說」：仿作生成</h2>
+      <p class="lead">選一樣你喜愛的事物（愛貓／愛籃球／愛動漫…），用〈愛蓮說〉的方法說明你為何愛它。</p>
+      <div class="grid cols-3">
+        <div class="card">
+          <label for="w-topic"><strong>主題名詞</strong>
+            <button class="example-btn" onclick="fillExample()">快速範例</button>
+          </label>
+          <input type="text" id="w-topic" placeholder="例：貓、籃球、動漫" aria-label="主題名詞" />
+        </div>
+        <div class="card">
+          <label for="w-a"><strong>對照組 A／B</strong></label>
+          <input type="text" id="w-a" placeholder="例：狗" aria-label="對照組A" />
+          <input type="text" id="w-b" style="margin-top:10px" placeholder="例：倉鼠" aria-label="對照組B" />
+        </div>
+        <div class="card">
+          <label for="w-value"><strong>關鍵品格詞</strong></label>
+          <input type="text" id="w-value" placeholder="例：專注、溫柔、堅持" aria-label="關鍵品格詞" />
+        </div>
+      </div>
+      <div class="center" style="margin-top:16px;">
+        <button id="btnGen">生成草稿</button>
+        <button class="secondary" id="btnExport" disabled>匯出 .txt</button>
+      </div>
+      <pre class="card" id="draft" style="display:none; white-space:pre-wrap; margin-top:14px;"></pre>
+    </section>
+
+    <section aria-labelledby="final-title">
+      <div class="kicker">FINAL STEP</div>
+      <h2 id="final-title">打包學習歷程</h2>
+      <p class="lead">完成互動後，輸入座號姓名，打包所有作答紀錄成 .txt 檔繳交！</p>
+      <div class="grid cols-2">
+        <div class="card">
+          <label for="studentSeat"><strong>座號</strong></label>
+          <input type="text" id="studentSeat" placeholder="例：80101" aria-label="學生座號">
+        </div>
+        <div class="card">
+          <label for="studentName"><strong>姓名</strong></label>
+          <input type="text" id="studentName" placeholder="例：王小明" aria-label="學生姓名">
+        </div>
+      </div>
+      <div class="center" style="margin-top:20px;">
+        <button id="btnExportPortfolio" class="special" style="padding:16px 28px; font-size:17px;">打包學習歷程
+          (.txt)</button>
+      </div>
+      <div class="center" style="margin-top:12px;">
+        <button id="btnExportJSON" class="secondary">匯出作答紀錄 (.json)</button>
+        <p class="small muted" style="margin-top:4px;">(此 .json 檔可供老師進行全班數據彙整)</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="podcast-title">
+      <div class="kicker">BONUS</div>
+      <h2 id="podcast-title">收聽本課 Podcast</h2>
+      <audio id="fullPodcast" controls preload="metadata" style="width:100%;">
+        您的瀏覽器不支援音訊播放。
+      </audio>
+    </section>
+  </main>
+  <!-- === Site Footer / 品牌 + AI 合作列 === -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="sf-wrap">
+      <!-- 品牌 -->
+      <div class="sf-brand">
+        <div class="sf-logo" aria-hidden="true">🪷</div>
+        <div class="sf-texts">
+          <div class="sf-title">Who Do You Love? — Which Flower?</div>
+          <div class="sf-sub">〈愛蓮說〉：不只愛蓮，更懂選擇｜誰說古文太遙遠</div>
+        </div>
+      </div>
+
+      <div class="sf-ai">
+  <span class="sf-ai-label">Co-created with</span>
+  <div class="sf-ai-badges" aria-label="本專案協作 AI">
+    <a class="ai-badge gpt" href="https://chat.openai.com" target="_blank" rel="noopener">
+      <img src="https://github.com/liliumyuyu-maker/my-images/blob/main/chatgptlogo.png?raw=true" alt="ChatGPT Logo">
+      ChatGPT
+    </a>
+    <a class="ai-badge claude" href="https://claude.ai" target="_blank" rel="noopener">
+      <img src="https://github.com/liliumyuyu-maker/my-images/blob/main/claudelogo.png?raw=true" alt="Claude Logo">
+      Claude
+    </a>
+    <a class="ai-badge gemini" href="https://gemini.google.com" target="_blank" rel="noopener">
+      <img src="https://github.com/liliumyuyu-maker/my-images/blob/main/geminilogo.png?raw=true" alt="Gemini Logo">
+      Gemini
+    </a>
+  </div>
+</div>
+
+      <!-- 導覽 -->
+      <nav class="sf-links" aria-label="頁尾導覽">
+        <a href="#" onclick="document.querySelector('#jumpStart').scrollIntoView({behavior:'smooth'})">🌸 開始探索</a>
+        <a href="#" onclick="window.scrollTo({top:0, behavior:'smooth'})">⬆ 回到頂端</a>
+      </nav>
+
+      <!-- 版權 -->
+      <div class="sf-meta">
+        <span>© 2025 Momo Teacher · lovewhichflower.netlify.app</span>
+        <span class="dot">•</span>
+        <span>教學用途 · 非商業</span>
+      </div>
+    </div>
+  </footer>
+
+
+  <script src="app.js"></script>
+</body>
+
+</html>
