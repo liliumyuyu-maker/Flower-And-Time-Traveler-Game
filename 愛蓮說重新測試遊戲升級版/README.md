@@ -10,7 +10,7 @@
 | :--- | :--- | :--- | :--- |
 | 🕹️ **沉浸式遊戲 (Game)** | **[點此線上體驗](https://whichflowergame.netlify.app/)** | [`./game`](./game) | 適用於**課堂活動**，透過遊戲化機制，讓學生沉浸式地體驗價值選擇。 |
 | 📖 **深度探究網頁 (Study)** | **[點此線上體驗](https://lovewhichflower.netlify.app/)** | [`./study`](./study) | 適用於**課前預習或作業**，引導文本細讀與思辨，並提供教師數據後台。 |
-| 🎓 **完整專案報告 (Report)** | **[點此閱讀](https://whichflowergame-nccu.netlify.app/)** | [`./project-report.html`](./project-report.html) | 詳述本教學組合包的創作緣起、人機協作歷程與未來展望。 |
+| 🎓 **完整專案報告 (Report)** | **[點此閱讀](https://whichflowergame-report.netlify.app/)** | [`./project-report.html`](./project-report.html) | 詳述本教學組合包的創作緣起、人機協作歷程與未來展望。 |
 
 >**給老師們的提醒：** 這個公開連結主要用於**快速體驗與展示**。為了給您的班級一個最穩定、獨立的遊戲環境，強烈建議您依照下方的「如何部署您自己的版本」指南，花幾分鐘建立一個完全屬於您班級的私有版本！
 ---
@@ -69,5 +69,6 @@
 
 * 感謝 [您想感謝的人或單位，例如：新科國中的學生們] 帶來的靈感。
 * 感謝 Gemini, Claude, ChatGPT 等 AI 助理在開發過程中提供的協助。
+
 
 
