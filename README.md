@@ -12,7 +12,7 @@
 | :--- | :--- | :--- |
 | 🕹️ **立即遊玩 (Live Game)** | **[點此線上體驗](https://whichflowergame.netlify.app/)** | 學生與老師可直接遊玩的遊戲成品。 |
 | 📖 **互動說明書 (Manual)** | **[點此閱讀](https://whichflowergamemanual.netlify.app/)** | 專為玩家與授課老師設計的詳細圖文說明手冊。 |
-| 🎓 **完整專案報告 (Report)** | **[點此閱讀](https://github.com/liliumyuyu-maker/Flower-And-Time-Traveler-Game/blob/main/project-report.html)** | 專為學術審查、獎項申請設計的完整報告，詳述創作緣起、人機協作歷程與未來展望。 |
+| 🎓 **完整專案報告 (Report)** | **[點此閱讀](https://whichflowergame-report.netlify.app/)** | 專為學術審查、獎項申請設計的完整報告，詳述創作緣起、人機協作歷程與未來展望。 |
 
 > **給老師們的提醒：** 「立即遊玩」連結主要用於**快速體驗與展示**。為了給您的班級一個最穩定、獨立的遊戲環境，強烈建議您依照下方的「如何部署您自己的版本」指南，花幾分鐘建立一個完全屬於您班級的私有版本！
 
@@ -49,5 +49,4 @@
 
 ## 致謝
 
-* 感謝 [您想感謝的人或單位] 帶來的靈感。
 * 感謝 Gemini, Claude, ChatGPT 等 AI 助理在開發過程中提供的協助。
