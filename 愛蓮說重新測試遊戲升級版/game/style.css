@@ -9,6 +9,7 @@
     /* 主題藍色，用於按鈕 */
     --brand-gold: #d4af37;
     /* 典雅的金色，用於邊框 */
+    --brand-chrys: #f59e0b;
 
     /* 背景與面板顏色 */
     --bg-dark: radial-gradient(ellipse at center, #1a2b4c 0%, #0f1a2e 100%);
@@ -1571,3 +1572,4 @@ button.special:hover,
 .stat-flash-decrease {
   animation: flash-red 0.7s ease-out;
 }
+
