@@ -8,11 +8,14 @@
 
 ## 🚀 專案快速導覽
 
+
 | 項目 | 連結 | 原始碼 | 說明 |
 | :--- | :--- | :--- | :--- |
-| 🕹️ **沉浸式遊戲 (Game)** | **[點此線上體驗](https://whichflowergame.netlify.app/)** | [`./game`](./game) | 適用於**課堂活動**，透過遊戲化機制，讓學生沉浸式地體驗價值選擇。 |
-| 📖 **深度探究網頁 (Study)** | **[點此線上體驗](https://lovewhichflower.netlify.app/)** | [`./study`](./study) | 適用於**課前預習或作業**，引導文本細讀與思辨，並提供教師數據後台。 |
-| 🎓 **完整專案報告 (Report)** | **[點此閱讀]( https://whichflowergame-report.netlify.app/)** | [`./project-report.html`](./project-report.html) | 詳述本教學組合包的創作緣起、人機協作歷程與未來展望。 |
+| 🕹️ **沉浸式遊戲 (Game)** | **[點此線上體驗](https://whichflowergame.netlify.app/)** | [`./game`](./game) | 適用於 **課堂活動**，透過遊戲化機制，讓學生沉浸式地體驗價值選擇。 |
+| 📘 **遊戲說明書 (Manual)** | **[點此閱讀](https://whichflowergamemanual.netlify.app/)** | [`./Manual.html`](./Manual.html) | 協助教師或學生快速了解規則與操作方式。 |
+| 📖 **深度探究網頁 (Study)** | **[點此線上體驗](https://lovewhichflower.netlify.app/)** | [`./study`](./study) | 適用於 **課前預習或作業**，引導文本細讀與思辨，並提供教師數據後台。 |
+| 🎓 **完整專案報告 (Report)** | **[點此閱讀](https://whichflowergame-report.netlify.app/)** | [`./project-report.html`](./project-report.html) | 詳述本教學組合包的創作緣起、人機協作歷程與未來展望。 |
+
 
 ---
 
@@ -104,6 +107,7 @@
 
 ## 🙏 致謝
 * 感謝 Gemini, Claude, ChatGPT 等 AI 助理在開發過程中提供的協助。
+
 
 
 
