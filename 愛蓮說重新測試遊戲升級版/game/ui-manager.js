@@ -241,37 +241,56 @@
     }
 
     // --- 結算視窗 ---
+    // ▼▼▼ 請用這段全新的 showEndGameModal 函數，取代掉舊的 ▼▼▼
+    // --- 結算視窗 (整合了新手引導彈窗) ---
     function showEndGameModal(results, onUpload) {
         const contentHTML = `
-            <div class="end-game-results">
-                <div class="result-card ${results.wealthChampion ? 'earned' : ''}"><div class="icon">💰</div><h3>財富冠軍</h3><p class="desc">市場的巨擘。</p></div>
-                <div class="result-card ${results.characterChampion ? 'earned' : ''}"><div class="icon">🌿</div><h3>品格冠軍</h3><p class="desc">取得完美平衡。</p></div>
-                <div class="result-card ${results.creativityChampion ? 'earned' : ''}"><div class="icon">⭐</div><h3>創作冠軍</h3><p class="desc">文壇的新星。</p></div>
-                <div class="result-card ${results.junziChampion ? 'earned' : ''}"><div class="icon">🏅</div><h3>君子冠軍</h3><p class="desc">最終的典範。</p></div>
+        <div class="end-game-results">
+            <div class="result-card ${results.wealthChampion ? 'earned' : ''}"><div class="icon">💰</div><h3>財富冠軍</h3><p class="desc">市場的巨擘。</p></div>
+            <div class="result-card ${results.characterChampion ? 'earned' : ''}"><div class="icon">🌿</div><h3>品格冠軍</h3><p class="desc">取得完美平衡。</p></div>
+            <div class="result-card ${results.creativityChampion ? 'earned' : ''}"><div class="icon">⭐</div><h3>創作冠軍</h3><p class="desc">文壇的新星。</p></div>
+            <div class="result-card ${results.junziChampion ? 'earned' : ''}"><div class="icon">🏅</div><h3>君子冠軍</h3><p class="desc">最終的典範。</p></div>
+        </div>
+        <div class="final-stats-summary">
+            <div class="summary-title">詳細數據</div>
+            <div class="summary-grid">
+                <div>💰 花幣: ${player.money.toLocaleString()}</div>
+                <div>⭐ 經驗: ${player.exp}</div>
+                <div>📖 文思: ${player.creativity}</div>
+                <div>🌺 牡丹: ${player.inventory.peony}</div>
+                <div>🪷 蓮花: ${player.inventory.lotus}</div>
+                <div>🌼 菊花: ${player.inventory.chrys}</div>
             </div>
-            <div class="final-stats-summary">
-                <div class="summary-title">詳細數據</div>
-                <div class="summary-grid">
-                    <div>💰 花幣: ${player.money.toLocaleString()}</div>
-                    <div>⭐ 經驗: ${player.exp}</div>
-                    <div>📖 文思: ${player.creativity}</div>
-                    <div>🌺 牡丹: ${player.inventory.peony}</div>
-                    <div>🪷 蓮花: ${player.inventory.lotus}</div>
-                    <div>🌼 菊花: ${player.inventory.chrys}</div>
-                </div>
-            </div>
-            <div class="creation-draft-box">
-                <label for="creation-draft-textarea">你的創作草稿 (可編輯)</label>
-                <textarea id="creation-draft-textarea">${buildWorkDraftForUpload()}</textarea>
-            </div>
-            <button id="upload-btn" class="special" style="width: 100%; margin-top: 20px;">上傳作品並進入雅集</button>
-            <button id="restart-btn" style="width: 100%; margin-top: 10px;">重新開始一局</button>
-        `;
+        </div>
+        <div class="creation-draft-box">
+            <label for="creation-draft-textarea">你的創作草稿 (請在此編輯)</label>
+            <textarea id="creation-draft-textarea" rows="6"></textarea>
+        </div>
+        <button id="upload-btn" class="special" style="width: 100%; margin-top: 20px;">上傳作品並進入雅集</button>
+        <button id="restart-btn" style="width: 100%; margin-top: 10px;">重新開始一局</button>
+    `;
         showModal('旅程結算', `經過 ${gameState.maxTurns} 回合的探索,你的最終成就如下:`, contentHTML, `你的最終總分: ${results.finalScore.toLocaleString()}`);
+
+        // 【✅ 核心優化】更新文字區域的內容，使用 placeholder
+        const draftTextarea = $('#creation-draft-textarea');
+        if (draftTextarea) {
+            draftTextarea.value = buildWorkDraftForUpload(); // 系統生成的文字，仍然填入
+            draftTextarea.placeholder = "✍️ 請在這裡修改或重寫你的感悟...\n\n💡 你可以分享：\n- 你做了哪些選擇？\n- 為什麼這樣選？\n- 你對品格的想法？";
+        }
 
         $('#upload-btn').onclick = onUpload;
         $('#restart-btn').onclick = () => window.location.reload();
+
+        // 【✅ 核心優化】在結算畫面出現後，延遲一秒彈出引導提示
+        setTimeout(() => {
+            // 檢查是否是第一次玩 (可選，但建議)
+            if (!sessionStorage.getItem('hasSeenEndGameGuide')) {
+                showEndGameGuidePopup();
+                sessionStorage.setItem('hasSeenEndGameGuide', 'true');
+            }
+        }, 1000);
     }
+    // ▲▲▲ 取代結束 ▲▲▲
 
     // --- 生成創作草稿 ---
     function buildWorkDraftForUpload() {
@@ -577,7 +596,7 @@
                     <div class="meta-value" style="font-size: 16px;">${work.authorName || '匿名'}</div>
                 </div>
                 <div class="meta-item">
-                    <div class="meta-label">總投資</div>
+                    <div class="meta-label">雅集賞金</div>
                     <div class="meta-value">${work.votes || 0}</div>
                 </div>
                 <div class="meta-item">
@@ -666,7 +685,7 @@
             card.innerHTML = `
                 <div>
                     <div style="font-size:16px; font-weight:800;">${work.title} ${isOwner ? '(你的作品)' : ''}</div>
-                    <div class="work-meta">作者:${work.authorName} ｜ 總投資:${work.votes || 0}</div>
+                    <div class="work-meta">作者:${work.authorName} ｜ 雅集賞金:${work.votes || 0}</div>
                     <div style="white-space:pre-wrap; font-size:13px; color:#cbd5e1; margin-top:8px;">${work.content}</div>
                 </div>
                 <div class="actions-box">
@@ -809,5 +828,25 @@
         updateDiceResult,
         generateReport
     };
+// ... 其他程式碼 ...
 
+// ▼▼▼ 請將這個全新的函數，貼到 ui-manager.js 的最底部 ▼▼▼
+// --- 遊戲結束時的引導彈窗 ---
+function showEndGameGuidePopup() {
+    const guidePopup = document.createElement('div');
+    guidePopup.className = 'endgame-guide-popup';
+
+    guidePopup.innerHTML = `
+        <div class="popup-content">
+            <h2>🎉 恭喜完成旅程！</h2>
+            <p>接下來，請發揮創意 ✍️<br>
+            <strong>修改或重寫一篇屬於你的感悟</strong></p>
+            <div class="popup-tip">💡 提示：下方的文字草稿「可以編輯」喔！</div>
+            <button onclick="this.parentElement.parentElement.remove()">我知道了，開始創作！</button>
+        </div>
+    `;
+
+    document.body.appendChild(guidePopup);
+}
+// ▲▲▲ 貼上結束 ▲▲▲
 })(window);
