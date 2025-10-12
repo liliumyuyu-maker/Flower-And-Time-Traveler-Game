@@ -1144,6 +1144,12 @@ button.special:hover {
         grid-template-rows: auto 1fr;
         height: auto;
     }
+    /* 手機版彈出視窗滑動修正 */
+    .modal-dialog {
+        overflow-y: auto; /* 允許垂直滑動 */
+        max-height: 90vh; /* 最大高度為螢幕的 90% */
+        -webkit-overflow-scrolling: touch; /* iOS 滑動更順暢 */
+    }
 }
 
 
@@ -1572,4 +1578,5 @@ button.special:hover,
 .stat-flash-decrease {
   animation: flash-red 0.7s ease-out;
 }
+
 
