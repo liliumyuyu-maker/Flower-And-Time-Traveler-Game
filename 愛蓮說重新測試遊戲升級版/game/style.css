@@ -1553,3 +1553,21 @@ button.special:hover,
     background: #15803d;
     transform: translateY(-2px);
 }
+/* --- 寶石 1: 數值變動的動態反饋 --- */
+@keyframes flash-green {
+  0% { transform: scale(1.2); color: #22c55e; text-shadow: 0 0 10px #22c55e; }
+  100% { transform: scale(1); color: inherit; text-shadow: none; }
+}
+
+@keyframes flash-red {
+  0% { transform: scale(1.2); color: #ef4444; text-shadow: 0 0 10px #ef4444; }
+  100% { transform: scale(1); color: inherit; text-shadow: none; }
+}
+
+.stat-flash-increase {
+  animation: flash-green 0.7s ease-out;
+}
+
+.stat-flash-decrease {
+  animation: flash-red 0.7s ease-out;
+}
