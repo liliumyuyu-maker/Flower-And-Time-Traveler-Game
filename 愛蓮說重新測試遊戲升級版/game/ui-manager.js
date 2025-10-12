@@ -7,6 +7,24 @@
     const $ = (sel) => document.querySelector(sel);
     let modalEl, eventTitleEl, eventDescEl, eventContentEl, eventResultEl, leaderboardModalEl, worksListEl, lbSubtitleEl, lbCloseBtn;
 
+    // --- 寶石 1: 數值閃爍的工具函數 ---
+    function flashStat(element, newValue, oldValue) {
+        if (!element || newValue === oldValue) return;
+
+        element.textContent = element.textContent.replace(oldValue.toLocaleString(), newValue.toLocaleString());
+
+        const change = newValue - oldValue;
+        if (change > 0) {
+            element.classList.add('stat-flash-increase');
+        } else if (change < 0) {
+            element.classList.add('stat-flash-decrease');
+        }
+
+        // 動畫結束後移除 class，方便下次觸發
+        setTimeout(() => {
+            element.classList.remove('stat-flash-increase', 'stat-flash-decrease');
+        }, 700);
+    }
     // --- 初始化 UI 元素 ---
     function initUI() {
         modalEl = $('#modal');
@@ -104,17 +122,24 @@
         modalEl.classList.add('show');
     }
 
-    // --- 事件視窗 ---
+    // --- 事件視窗 (整合了「感官之石」數值閃爍功能) ---
     function showEventModal(card, onChoice) {
+        // 這一部分完全不變，負責產生選項按鈕
         let contentHTML = '';
         if (card.choices) {
-            contentHTML = card.choices.map((choice, index) => `<button data-choice-index="${index}">${choice.text}</button>`).join('');
+            contentHTML = card.choices.map((choice, index) => {
+                const costMatch = choice.text.match(/花幣-(\d+)/);
+                const cost = costMatch ? parseInt(costMatch[1], 10) : 0;
+                const isDisabled = cost > player.money;
+                const disabledAttribute = isDisabled ? 'disabled' : '';
+                return `<button data-choice-index="${index}" ${disabledAttribute}>${choice.text}</button>`;
+            }).join('');
         } else {
             contentHTML = `<button data-choice-index="0">了解</button>`;
         }
         showModal(card.title, card.desc, contentHTML, card.result || '');
 
-        // 新手導覽提示
+        // 您的新手導覽提示和典籍小注顯示功能，也完全保留，不受影響
         try {
             const turn = (global.GameState && global.GameState.gameState && global.GameState.gameState.turn) || 1;
             if (turn === 1 && !sessionStorage.getItem('guide_event_first_turn')) {
@@ -133,7 +158,6 @@
             }
         } catch (_) { }
 
-        // 事件典籍小注顯示
         try {
             const note = (global.GameData && typeof global.GameData.getEventNote === 'function')
                 ? global.GameData.getEventNote(card)
@@ -151,15 +175,25 @@
             }
         } catch (_) { }
 
+        // 點擊事件處理的核心修改在這裡
         $('#event-content').onclick = (e) => {
             if (e.target.tagName !== 'BUTTON') return;
             $('#event-content').onclick = null;
 
             if (card.choices) {
+                // ▼▼▼ 這是我們植入魔法的地方 ▼▼▼
+
+                // 1. 在執行任何動作前，先像拍快照一樣，記下所有舊的數值
+                const oldMoney = player.money;
+                const oldExp = player.exp;
+                const oldCreativity = player.creativity;
+                const oldAttrs = { ...player.attributes }; // 使用展開運算符(...)建立一個屬性的副本
+
+                // 2. 執行選項的效果，讓玩家的數值發生真實改變
                 const choice = card.choices[e.target.dataset.choiceIndex];
                 const resultText = choice.effect(player);
 
-                // 防呆:把屬性夾在 0~100、金錢/文思/經驗不為負
+                // 3. 執行您原有的防呆機制，確保數值不會超出邊界
                 try {
                     const clamp = v => Math.max(0, Math.min(100, v | 0));
                     if (player && player.attributes) {
@@ -174,13 +208,35 @@
                     }
                 } catch (_) { }
 
+                // 4. 更新結果文字，並清空選項按鈕
                 eventResultEl.textContent = resultText;
                 eventContentEl.innerHTML = '';
+
+                // 5. 【魔法生效！】比較新舊數值，並對有變動的項目觸發閃爍動畫
+                flashStat($('#stat-money'), player.money, oldMoney);
+                flashStat($('#stat-exp'), player.exp, oldExp);
+                flashStat($('#stat-creativity'), player.creativity, oldCreativity);
+                // 屬性條比較特殊，我們直接更新它的寬度
+                for (const attr in player.attributes) {
+                    if (player.attributes[attr] !== oldAttrs[attr]) {
+                        const value = Math.max(0, Math.min(100, player.attributes[attr]));
+                        const fillElement = $(`#attr-${attr} .attribute-fill`);
+                        if (fillElement) fillElement.style.width = `${value}%`;
+                    }
+                }
+
+                // 手機版的 HUD 也要同步更新
+                updateMobileHUD();
+
+                // ▲▲▲ 魔法結束 ▲▲▲
+
+                // 6. 按照原定計畫，在延遲後關閉視窗並進入下一回合
                 setTimeout(() => {
                     modalEl.classList.remove('show');
                     $('#dice-roll-btn').disabled = false;
                     onChoice();
                 }, 2500);
+
             } else {
                 modalEl.classList.remove('show');
                 onChoice();
@@ -828,15 +884,15 @@
         updateDiceResult,
         generateReport
     };
-// ... 其他程式碼 ...
+    // ... 其他程式碼 ...
 
-// ▼▼▼ 請將這個全新的函數，貼到 ui-manager.js 的最底部 ▼▼▼
-// --- 遊戲結束時的引導彈窗 ---
-function showEndGameGuidePopup() {
-    const guidePopup = document.createElement('div');
-    guidePopup.className = 'endgame-guide-popup';
+    // ▼▼▼ 請將這個全新的函數，貼到 ui-manager.js 的最底部 ▼▼▼
+    // --- 遊戲結束時的引導彈窗 ---
+    function showEndGameGuidePopup() {
+        const guidePopup = document.createElement('div');
+        guidePopup.className = 'endgame-guide-popup';
 
-    guidePopup.innerHTML = `
+        guidePopup.innerHTML = `
         <div class="popup-content">
             <h2>🎉 恭喜完成旅程！</h2>
             <p>接下來，請發揮創意 ✍️<br>
@@ -846,7 +902,7 @@ function showEndGameGuidePopup() {
         </div>
     `;
 
-    document.body.appendChild(guidePopup);
-}
-// ▲▲▲ 貼上結束 ▲▲▲
+        document.body.appendChild(guidePopup);
+    }
+    // ▲▲▲ 貼上結束 ▲▲▲
 })(window);
