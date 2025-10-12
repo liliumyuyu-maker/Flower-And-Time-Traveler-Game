@@ -40,7 +40,7 @@ body {
 /* 2. 替換 body 背景為星空效果 */
 body {
     margin: 0;
-    font-family: "Noto Serif TC", serif;
+    font-family: "Noto Serif TC", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", serif; /* <--- 換成這一行 */
     /* 改用更古典的 Noto Serif TC */
     background: var(--bg-dark);
     color: var(--ink);
@@ -1483,4 +1483,73 @@ button.special:hover,
         box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
         border-color: var(--brand-gold);
     }
+}
+/* ==================================================
+   遊戲結束引導彈窗樣式 (Endgame Guide Popup)
+   ================================================== */
+.endgame-guide-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 26, 46, 0.7);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+
+.endgame-guide-popup .popup-content {
+    background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%);
+    padding: 32px 40px;
+    border-radius: 20px;
+    border: 3px solid #f59e0b;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    max-width: 90vw;
+    width: 480px;
+}
+
+.endgame-guide-popup h2 {
+    color: #b45309;
+    margin-bottom: 16px;
+    font-size: 26px;
+}
+
+.endgame-guide-popup p {
+    color: #4b5563;
+    font-size: 18px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.endgame-guide-popup p strong {
+    font-size: 20px;
+    color: #1e293b;
+}
+
+.endgame-guide-popup .popup-tip {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #78350f;
+    margin-bottom: 24px;
+    font-weight: 600;
+}
+
+.endgame-guide-popup button {
+    background: #16a34a; /* A vibrant green */
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    font-size: 17px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s;
+}
+
+.endgame-guide-popup button:hover {
+    background: #15803d;
+    transform: translateY(-2px);
 }
