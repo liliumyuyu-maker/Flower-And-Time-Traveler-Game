@@ -40,4 +40,3 @@
     // Expose states to the global scope
     global.GameState = { player, market, gameState };
 })(window);
-
