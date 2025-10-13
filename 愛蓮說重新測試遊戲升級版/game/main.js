@@ -27,6 +27,8 @@
 
     // --- 遊戲核心循環 ---
     function rollDice() {
+        // ▼▼▼ 在這裡加上一行，停止發光 ▼▼▼
+        diceBtn.classList.remove('is-active-turn');
         if (!gameState.isPlayerTurn) return;
         gameState.isPlayerTurn = false;
         diceBtn.disabled = true;
@@ -177,6 +179,8 @@
         UIManager.updateDiceResult('你的回合，請擲骰子。');
         UIManager.updatePlayerDashboard(); // 包含更新桌面儀表板與手機HUD
         diceBtn.disabled = false;
+        // ▼▼▼ 在這裡加上一行，開始發光 ▼▼▼
+        diceBtn.classList.add('is-active-turn');
     }
 
     // --- 遊戲結束與多人模式啟動 ---
