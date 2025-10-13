@@ -139,7 +139,7 @@
         modalEl.classList.add('show');
     }
 
-    // --- 事件視窗 (整合了「感官之石」數值閃爍功能) ---
+    // --- 事件視窗 (整合了「感官之石」、「幽靈計時器修正」與「手動關閉」三大功能) ---
     function showEventModal(card, onChoice) {
         // 這一部分完全不變，負責產生選項按鈕
         let contentHTML = '';
@@ -192,35 +192,34 @@
             }
         } catch (_) { }
 
-
-        // ▼▼▼ 這是我們的第二處核心修正 ▼▼▼
+        // 點擊事件處理的核心修改在這裡
         $('#event-content').onclick = (e) => {
             if (e.target.tagName !== 'BUTTON') return;
             $('#event-content').onclick = null;
 
             if (card.choices) {
+                // ▼▼▼ 這是我們植入最終魔法的地方 ▼▼▼
+
+                // 1. 宣告一個變數，用來存放我們的「自動關閉」計時器
+                let autoCloseTimer = null;
+
                 const choice = card.choices[e.target.dataset.choiceIndex];
                 const resultText = choice.effect(player);
 
-                // 【暗號辨識系統】
+                // 2. 【暗號辨識系統】，處理「尋訪名士」的特殊情況
                 if (resultText === 'TRIGGER_EVENT') {
-                    modalEl.classList.remove('show'); // 立刻關閉當前視窗
-                    // 稍微延遲後觸發新事件，讓畫面轉換更流暢
+                    modalEl.classList.remove('show');
                     setTimeout(() => global.GameData.getRandomEvent ? global.UIManager.showEventModal(global.GameData.getRandomEvent(), onChoice) : onChoice(), 300);
-                    return; // 結束執行，不留下任何「幽靈計時器」
+                    return; // 結束執行，不留下任何計時器
                 }
 
-                // 如果不是暗號，就走原本的正常流程
+                // 3. 如果不是暗號，就走正常的「顯示結果」流程
                 const oldMoney = player.money;
                 const oldExp = player.exp;
                 const oldCreativity = player.creativity;
                 const oldAttrs = { ...player.attributes };
 
-                // 這部分是為了確保即使 effect 函數修改了 player，我們也能捕捉到
-                // 如果 resultText 來自 effect，我們需要重新獲取 player 狀態
-                // 但在這裡，我們已經執行過 effect，所以 player 已經是最新狀態
-
-                try {
+                try { // 防呆機制
                     const clamp = v => Math.max(0, Math.min(100, v | 0));
                     if (player && player.attributes) {
                         player.attributes.peony = clamp(player.attributes.peony);
@@ -234,9 +233,23 @@
                     }
                 } catch (_) { }
 
+                // 4. 更新結果文字，並清空選項按鈕
                 eventResultEl.textContent = resultText;
                 eventContentEl.innerHTML = '';
 
+                // 5. 【新增！】創建並顯示我們的手動關閉按鈕
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'manual-close-btn';
+                closeBtn.textContent = '關閉';
+                closeBtn.onclick = () => {
+                    clearTimeout(autoCloseTimer); // 【關鍵！】按下時，取消自動關閉
+                    modalEl.classList.remove('show');
+                    $('#dice-roll-btn').disabled = false;
+                    onChoice();
+                };
+                eventContentEl.appendChild(closeBtn); // 將按鈕加入畫面
+
+                // 6. 執行「感官之石」的數值閃爍動畫
                 flashStat($('#stat-money'), player.money, oldMoney);
                 flashStat($('#stat-exp'), player.exp, oldExp);
                 flashStat($('#stat-creativity'), player.creativity, oldCreativity);
@@ -249,20 +262,23 @@
                 }
                 updateMobileHUD();
 
-                setTimeout(() => {
-                    modalEl.classList.remove('show');
-                    $('#dice-roll-btn').disabled = false;
-                    onChoice();
+                // 7. 將原本的「自動關閉」計時器存到我們的變數中
+                autoCloseTimer = setTimeout(() => {
+                    if (modalEl.classList.contains('show')) {
+                        modalEl.classList.remove('show');
+                        $('#dice-roll-btn').disabled = false;
+                        onChoice();
+                    }
                 }, 2500);
+
+                // ▲▲▲ 魔法結束 ▲▲▲
 
             } else {
                 modalEl.classList.remove('show');
                 onChoice();
             }
         };
-        // ▲▲▲ 修正結束 ▲▲▲
     }
-
     // --- 市場視窗 ---
     function showMarketModal(onComplete) {
         const contentHTML = `
