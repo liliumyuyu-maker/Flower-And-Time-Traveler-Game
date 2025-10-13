@@ -42,46 +42,46 @@
         }, 1000);
     }
 
-// 【最終修正版】 handleCellAction 函數
-function handleCellAction(boardIndex) {
-    const cellType = GameData.boardLayout[boardIndex];
-    switch (cellType) {
-        case 'E': 
-            triggerRandomEvent(); 
-            break;
-        case 'M': 
-            UIManager.showMarketModal(nextTurn); 
-            break;
-        
-        case 'S':
-            const startEventCard = {
-                title: '【驛站小憩】',
-                desc: '回到起點，你獲得了片刻的喘息。是要整理行囊、休養生息，還是要把握機會，外出尋訪靈感？',
-                choices: [
-                    {
-                        text: '「休養生息，穩固根基。」',
-                        effect: (player) => {
-                            player.money += 50;
-                            player.exp += 5;
-                            return "你整理了財務與心得，恢復了些許精力。花幣+50, 經驗+5";
-                        }
-                    },
-                    {
-                        text: '「尋訪名士，探求新知。」',
-                        // ▼▼▼ 這是我們的核心修正 ▼▼▼
-                        // 我們不再回傳文字，而是回傳一個特殊的「暗號」
-                        effect: (player) => 'TRIGGER_EVENT'
-                        // ▲▲▲ 修正結束 ▲▲▲
-                    }
-                ]
-            };
-            UIManager.showEventModal(startEventCard, nextTurn);
-            break;
+    // 【最終修正版】 handleCellAction 函數
+    function handleCellAction(boardIndex) {
+        const cellType = GameData.boardLayout[boardIndex];
+        switch (cellType) {
+            case 'E':
+                triggerRandomEvent();
+                break;
+            case 'M':
+                UIManager.showMarketModal(nextTurn);
+                break;
 
-        default: 
-            nextTurn();
+            case 'S':
+                const startEventCard = {
+                    title: '【驛站小憩】',
+                    desc: '回到起點，你獲得了片刻的喘息。是要整理行囊、休養生息，還是要把握機會，外出尋訪靈感？',
+                    choices: [
+                        {
+                            text: '「休養生息，穩固根基。」',
+                            effect: (player) => {
+                                player.money += 50;
+                                player.exp += 5;
+                                return "你整理了財務與心得，恢復了些許精力。花幣+50, 經驗+5";
+                            }
+                        },
+                        {
+                            text: '「尋訪名士，探求新知。」',
+                            // ▼▼▼ 這是我們的核心修正 ▼▼▼
+                            // 我們不再回傳文字，而是回傳一個特殊的「暗號」
+                            effect: (player) => 'TRIGGER_EVENT'
+                            // ▲▲▲ 修正結束 ▲▲▲
+                        }
+                    ]
+                };
+                UIManager.showEventModal(startEventCard, nextTurn);
+                break;
+
+            default:
+                nextTurn();
+        }
     }
-}
 
     function triggerRandomEvent() {
         const eventCard = GameData.getRandomEvent();
@@ -115,18 +115,7 @@ function handleCellAction(boardIndex) {
 
         UIManager.showEventModal(eventCard, nextTurn);
     }
-    // ── 新增：行動版 HUD 同步工具 ──
-    function updateMobileHUD() {
-        try {
-            const m = document.getElementById('hud-money');
-            const e = document.getElementById('hud-exp');
-            const c = document.getElementById('hud-creative');
-            if (!m || !e || !c || !player) return;
-            m.textContent = (player.money || 0).toLocaleString('zh-TW');
-            e.textContent = (player.exp || 0).toLocaleString('zh-TW');
-            c.textContent = (player.creativity || 0).toLocaleString('zh-TW');
-        } catch (_) { }
-    }
+
 
     // ── 新增：包一層，讓每次更新面板時也順便更新 HUD（不改動原本 UIManager） ──
     function wrapUpdatePlayerDashboard() {
@@ -134,7 +123,7 @@ function handleCellAction(boardIndex) {
         const _orig = UIManager.updatePlayerDashboard.bind(UIManager);
         UIManager.updatePlayerDashboard = function () {
             _orig();
-            updateMobileHUD();
+            UIManager.updateMobileHUD(); // <-- 在這裡加上 UIManager.
         };
     }
 
@@ -273,7 +262,7 @@ function handleCellAction(boardIndex) {
         diceBtn.addEventListener('click', rollDice);
         // ★ 新增：包裝面板更新＋初始化 HUD 與市場按鈕
         wrapUpdatePlayerDashboard();
-        updateMobileHUD();
+        UIManager.updateMobileHUD(); // <-- 在這裡加上 UIManager.
         bindMobileHudActions();
         // 新增：監聽視窗大小變化事件，自動校準棋子位置
         window.addEventListener('resize', () => {
@@ -392,4 +381,3 @@ function handleCellAction(boardIndex) {
     main();
 
 })(window);
-
