@@ -7,6 +7,23 @@
     const $ = (sel) => document.querySelector(sel);
     let modalEl, eventTitleEl, eventDescEl, eventContentEl, eventResultEl, leaderboardModalEl, worksListEl, lbSubtitleEl, lbCloseBtn;
 
+    // ── 行動版 HUD 同步工具 ──
+    function updateMobileHUD() {
+        try {
+            // 確保 player 變數已從全域狀態更新
+            if (!global.GameState || !global.GameState.player) return;
+            const player = global.GameState.player;
+
+            const m = document.getElementById('hud-money');
+            const e = document.getElementById('hud-exp');
+            const c = document.getElementById('hud-creative');
+            if (!m || !e || !c) return;
+            m.textContent = (player.money || 0).toLocaleString('zh-TW');
+            e.textContent = (player.exp || 0).toLocaleString('zh-TW');
+            c.textContent = (player.creativity || 0).toLocaleString('zh-TW');
+        } catch (_) { }
+    }
+
     // --- 寶石 1: 數值閃爍的工具函數 ---
     function flashStat(element, newValue, oldValue) {
         if (!element || newValue === oldValue) return;
@@ -884,7 +901,8 @@
         showLeaderboardModal,
         showToast,
         updateDiceResult,
-        generateReport
+        generateReport,
+        updateMobileHUD // <-- 在這裡【加上】這一行
     };
     // ... 其他程式碼 ...
 
