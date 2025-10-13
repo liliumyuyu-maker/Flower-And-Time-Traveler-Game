@@ -175,25 +175,34 @@
             }
         } catch (_) { }
 
-        // 點擊事件處理的核心修改在這裡
+
+        // ▼▼▼ 這是我們的第二處核心修正 ▼▼▼
         $('#event-content').onclick = (e) => {
             if (e.target.tagName !== 'BUTTON') return;
             $('#event-content').onclick = null;
 
             if (card.choices) {
-                // ▼▼▼ 這是我們植入魔法的地方 ▼▼▼
-
-                // 1. 在執行任何動作前，先像拍快照一樣，記下所有舊的數值
-                const oldMoney = player.money;
-                const oldExp = player.exp;
-                const oldCreativity = player.creativity;
-                const oldAttrs = { ...player.attributes }; // 使用展開運算符(...)建立一個屬性的副本
-
-                // 2. 執行選項的效果，讓玩家的數值發生真實改變
                 const choice = card.choices[e.target.dataset.choiceIndex];
                 const resultText = choice.effect(player);
 
-                // 3. 執行您原有的防呆機制，確保數值不會超出邊界
+                // 【暗號辨識系統】
+                if (resultText === 'TRIGGER_EVENT') {
+                    modalEl.classList.remove('show'); // 立刻關閉當前視窗
+                    // 稍微延遲後觸發新事件，讓畫面轉換更流暢
+                    setTimeout(() => global.GameData.getRandomEvent ? global.UIManager.showEventModal(global.GameData.getRandomEvent(), onChoice) : onChoice(), 300);
+                    return; // 結束執行，不留下任何「幽靈計時器」
+                }
+
+                // 如果不是暗號，就走原本的正常流程
+                const oldMoney = player.money;
+                const oldExp = player.exp;
+                const oldCreativity = player.creativity;
+                const oldAttrs = { ...player.attributes };
+
+                // 這部分是為了確保即使 effect 函數修改了 player，我們也能捕捉到
+                // 如果 resultText 來自 effect，我們需要重新獲取 player 狀態
+                // 但在這裡，我們已經執行過 effect，所以 player 已經是最新狀態
+
                 try {
                     const clamp = v => Math.max(0, Math.min(100, v | 0));
                     if (player && player.attributes) {
@@ -208,15 +217,12 @@
                     }
                 } catch (_) { }
 
-                // 4. 更新結果文字，並清空選項按鈕
                 eventResultEl.textContent = resultText;
                 eventContentEl.innerHTML = '';
 
-                // 5. 【魔法生效！】比較新舊數值，並對有變動的項目觸發閃爍動畫
                 flashStat($('#stat-money'), player.money, oldMoney);
                 flashStat($('#stat-exp'), player.exp, oldExp);
                 flashStat($('#stat-creativity'), player.creativity, oldCreativity);
-                // 屬性條比較特殊，我們直接更新它的寬度
                 for (const attr in player.attributes) {
                     if (player.attributes[attr] !== oldAttrs[attr]) {
                         const value = Math.max(0, Math.min(100, player.attributes[attr]));
@@ -224,13 +230,8 @@
                         if (fillElement) fillElement.style.width = `${value}%`;
                     }
                 }
-
-                // 手機版的 HUD 也要同步更新
                 updateMobileHUD();
 
-                // ▲▲▲ 魔法結束 ▲▲▲
-
-                // 6. 按照原定計畫，在延遲後關閉視窗並進入下一回合
                 setTimeout(() => {
                     modalEl.classList.remove('show');
                     $('#dice-roll-btn').disabled = false;
@@ -242,6 +243,7 @@
                 onChoice();
             }
         };
+        // ▲▲▲ 修正結束 ▲▲▲
     }
 
     // --- 市場視窗 ---
