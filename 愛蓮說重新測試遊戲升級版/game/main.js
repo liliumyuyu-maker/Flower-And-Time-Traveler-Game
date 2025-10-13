@@ -42,7 +42,7 @@
         }, 1000);
     }
 
-    // 【全新升級版】 handleCellAction 函數
+// 【最終修正版】 handleCellAction 函數
 function handleCellAction(boardIndex) {
     const cellType = GameData.boardLayout[boardIndex];
     switch (cellType) {
@@ -53,9 +53,7 @@ function handleCellAction(boardIndex) {
             UIManager.showMarketModal(nextTurn); 
             break;
         
-        // ▼▼▼ 這裡是我們對「起點」的全新設計 ▼▼▼
         case 'S':
-            // 我們不再只是隨機觸發，而是給予玩家一個選擇
             const startEventCard = {
                 title: '【驛站小憩】',
                 desc: '回到起點，你獲得了片刻的喘息。是要整理行囊、休養生息，還是要把握機會，外出尋訪靈感？',
@@ -70,19 +68,15 @@ function handleCellAction(boardIndex) {
                     },
                     {
                         text: '「尋訪名士，探求新知。」',
-                        // 這個選項的 effect 比較特別，它會觸發另一個隨機事件
-                        effect: (player) => {
-                            // 我們在這裡直接呼叫 triggerRandomEvent，但返回一個提示文字
-                            setTimeout(() => triggerRandomEvent(), 200); // 稍微延遲讓視窗先關閉
-                            return "你決定外出探索，一場未知的相遇正在等待著你...";
-                        }
+                        // ▼▼▼ 這是我們的核心修正 ▼▼▼
+                        // 我們不再回傳文字，而是回傳一個特殊的「暗號」
+                        effect: (player) => 'TRIGGER_EVENT'
+                        // ▲▲▲ 修正結束 ▲▲▲
                     }
                 ]
             };
-            // 直接呼叫事件視窗來展示這個「起點專屬事件」
             UIManager.showEventModal(startEventCard, nextTurn);
             break;
-        // ▲▲▲ 設計結束 ▲▲▲
 
         default: 
             nextTurn();
@@ -398,3 +392,4 @@ function handleCellAction(boardIndex) {
     main();
 
 })(window);
+
