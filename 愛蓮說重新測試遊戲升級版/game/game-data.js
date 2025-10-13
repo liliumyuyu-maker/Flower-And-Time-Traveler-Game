@@ -3,13 +3,13 @@
 
     // --- 遊戲棋盤佈局 (7x7 環狀新版本) ---
     const boardLayout = [
-        'S', 'E', 'M', 'E', 'M', 'E', 'S',
-        'E', null, null, null, null, null, 'M',
+        'S', 'E', 'M', 'E', 'E', 'E', 'S',
+        'E', null, null, null, null, null, 'E',
         'M', null, null, null, null, null, 'E',
         'E', null, null, null, null, null, 'M',
+        'E', null, null, null, null, null, 'E',
         'M', null, null, null, null, null, 'E',
-        'E', null, null, null, null, null, 'M',
-        'S', 'E', 'M', 'E', 'M', 'E', 'S'
+        'S', 'E', 'M', 'E', 'E', 'E', 'S'
     ];
     // 棋盤的路徑順序（完整外圈 24 格，依序繞一圈）
     const boardPath = [
