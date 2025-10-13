@@ -89,6 +89,10 @@ body {
     /* 加上金色邊框 */
     overflow-y: auto;
 }
+/* ★★★★★ 最終版 Footer 遮擋修正 ★★★★★ */
+.main-panel {
+    padding-bottom: 80px; /* 為主面板增加足夠的底部空間 */
+}
 
 /* 微調側邊欄的 padding，讓它與主面板看起來更協調 */
 .sidebar {
@@ -143,7 +147,6 @@ h3 {
 
 /* Game Board - 更精緻的棋盤 */
 .game-board-container {
-    flex-grow: 1;
     display: grid;
     place-items: center;
     padding: 10px;
@@ -1083,7 +1086,7 @@ button.special:hover {
         display: block;
         padding: 10px;
         /* 在底部增加足夠的留白，確保 Mobile HUD 和 Footer 不會擋住任何內容 */
-        padding-bottom: 150px;
+        
     }
 
     /* 讓大廳和遊戲容器都能自由延伸 */
@@ -1627,4 +1630,42 @@ button.special:hover,
         height: auto !important; /* 高度自動！ */
         max-height: none !important; /* 取消最大高度限制 */
     }
+}
+/* =======================================================
+   按鈕呼吸燈引導效果 (The Guiding Light Patch)
+   ======================================================= */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .3), inset 0 2px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 8px 30px rgba(52, 152, 219, .6), inset 0 2px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(1.02);
+    }
+}
+
+#dice-roll-btn.is-active-turn {
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+/* =======================================================
+   事件結果手動關閉按鈕樣式 (Manual Close Button Patch)
+   ======================================================= */
+.manual-close-btn {
+    display: block; /* 讓按鈕獨佔一行 */
+    margin: 16px auto 0; /* 與上方結果文字的間距 */
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.manual-close-btn:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
 }
