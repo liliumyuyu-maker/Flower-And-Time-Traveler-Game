@@ -1669,3 +1669,122 @@ button.special:hover,
     background: #e2e8f0;
     border-color: #94a3b8;
 }
+/* =======================================================
+   決策回放 (Timeline) 樣式
+   ======================================================= */
+.timeline-container {
+    margin-top: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 15px; /* for scrollbar */
+}
+
+.timeline-item {
+    display: flex;
+    gap: 15px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+}
+
+.timeline-turn {
+    background: var(--brand-gold);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    height: fit-content;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.timeline-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--ink);
+}
+
+.timeline-desc {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.timeline-choice, .timeline-result {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.timeline-choice {
+    margin-bottom: 8px;
+    border-left: 4px solid var(--brand);
+}
+
+.timeline-result {
+    border-left: 4px solid #10b981; /* Green color for result */
+}
+
+.timeline-choice strong, .timeline-result strong {
+    color: var(--ink);
+    margin-right: 8px;
+}
+/* =======================================================
+   成就系統樣式 (Achievement System Patch)
+   ======================================================= */
+.achievements-summary {
+    margin-top: 24px;
+    padding: 20px;
+    background: #fffbeb; /* 使用類似 .result-card.earned 的淡黃色 */
+    border-radius: 12px;
+    border: 1px solid #fef3c7;
+}
+
+/* .summary-title 樣式已存在, 會自動套用 */
+
+.achievements-list {
+    display: grid;
+    /* 使用 grid 排版，會自動換行 */
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.achievement-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.ach-emoji {
+    font-size: 24px; /* 放大 Emoji */
+}
+
+.ach-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+}
