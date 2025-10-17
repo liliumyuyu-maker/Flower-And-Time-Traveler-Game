@@ -44,10 +44,20 @@
         // --- 非市場事件 ---
         { type: 'knowledge', title: '【奇遇】遇見陶淵明', desc: '在東籬下，你遇見一位採菊的隱士，他問你：「花中君子固然可敬，但若能悠然自得，不也是一種人生嗎？」', choices: [{ text: '「先生說的是，自在最難得。」', effect: (player) => { player.attributes.chrys += 15; player.exp += 10; player.creativity += 5; return "自在+15, 經驗+10, 文思+5"; } }, { text: '「但我認為入世改變更重要。」', effect: (player) => { player.attributes.lotus += 10; player.attributes.chrys -= 5; player.exp += 5; return "自守+10, 自在-5, 經驗+5"; } },] },
         { type: 'interpersonal', title: '【人際】朋友的炫耀', desc: '你的朋友買了最新的名牌包，興奮地向你展示，並說：「人還是要懂得犒賞自己，活出光彩！」', choices: [{ text: '「太棒了！這完全是你的風格！」', effect: (player) => { player.attributes.peony += 10; player.money -= 50; return "你請他喝了杯飲料慶祝。榮耀+10, 花幣-50"; } }, { text: '「很美，但我覺得內在充實更快樂。」', effect: (player) => { player.attributes.lotus += 10; player.attributes.peony -= 5; player.exp += 5; return "自守+10, 榮耀-5, 經驗+5"; } }, { text: '「只要你開心就好。」', effect: (player) => { player.attributes.chrys += 5; return "自在+5"; } }] },
+
+        /*
+        // --- 🔴 已修復：註解掉重複的「靈光一閃」事件 ---
         { type: 'creation', title: '【創作】靈光一閃', desc: '你漫步湖邊，看到蓮花亭亭淨植的模樣，心中湧現一股創作的衝動。你想記下什麼？', choices: [{ text: '描寫它的形態：「中通外直，不蔓不枝」', effect: (player) => { player.creativity += 15; player.exp += 5; return "文思+15, 經驗+5"; } }, { text: '抒發它的品格：「香遠益清，可遠觀而不可褻玩」', effect: (player) => { player.creativity += 10; player.attributes.lotus += 5; return "文思+10, 自守+5"; } }] },
+        */
+
         { type: 'character', title: '【品格】清廉風潮', desc: '朝中御史發起節儉運動，提倡清廉，以佩戴蓮花為風尚，奢華的牡丹則受到冷落。', choices: [{ text: '響應號召，拋售牡丹，買入蓮花。', effect: (player) => { player.attributes.lotus += 15; player.attributes.peony -= 5; player.exp += 10; return "自守+15, 榮耀-5, 經驗+10"; } }, { text: '認為這只是一時風潮，不為所動。', effect: (player) => { player.attributes.chrys += 10; return "自在+10"; } }] },
         { type: 'interpersonal', title: '【人際】同儕的壓力', desc: '同學們都在討論最新的流行趨勢，並嘲笑你的風格有些過時。', choices: [{ text: '花錢跟上潮流，融入大家。', effect: (player) => { player.money -= 100; player.attributes.peony += 10; return "花幣-100, 榮耀+10"; } }, { text: '堅持自己的風格，不予理會。', effect: (player) => { player.attributes.lotus += 10; player.exp += 5; return "自守+10, 經驗+5"; } }] },
+
+        /*
+        // --- 🔴 已修復：註解掉重複的「遇見周敦頤」事件 ---
         { type: 'knowledge', title: '【奇遇】遇見周敦頤', desc: '你在濂溪書院旁看到一位先生正在凝視池中蓮花，他感嘆道：「菊，花之隱逸者也；牡丹，花之富貴者也；蓮，花之君子者也。」', choices: [{ text: '上前行禮，並贈上一束蓮花。', effect: (player) => { player.creativity += 15; player.exp += 15; player.attributes.lotus += 10; return "與先賢交流，文思+15, 經驗+15, 自守+10"; } }, { text: '默默離開，不去打擾。', effect: (player) => { player.attributes.chrys += 5; return "自在+5"; } }] },
+        */
+
         { type: 'creation', title: '【創作】立意不明', desc: '你正在構思一篇「愛Ｏ說」，但對於要讚頌的主題品格感到迷惘。', choices: [{ text: '選擇一個大眾討喜的主題來寫。', effect: (player) => { player.attributes.peony += 5; player.creativity -= 5; return "榮耀+5, 但文思-5"; } }, { text: '忠於內心，選擇一個冷門但自己真正喜愛的主題。', effect: (player) => { player.creativity += 10; player.attributes.lotus += 5; return "文思+10, 自守+5"; } }] }
     ];
 
@@ -307,7 +317,7 @@
                     effect: (p) => {
                         p.attributes.lotus += 10;
                         p.exp += 5;
-                        return '你看到了政策背後長遠的代價，思考更為周全。自守+10、經驗+5。';
+                        return '你看到了政策背後 long 遠的代價，思考更為周全。自守+10、經驗+5。';
                     }
                 }
             ]
@@ -440,29 +450,36 @@
 
     // ▼▼▼ 請用這段完整的 _fallbackGetRandomEvent 函數，取代掉舊的 ▼▼▼
     function _fallbackGetRandomEvent() {
+        // ✅ 修正：即使 GameState 未完全初始化，也要確保基本結構存在
+        if (!global.GameState) global.GameState = {};
+        if (!global.GameState.gameState) global.GameState.gameState = {};
         if (!global.GameState.gameState.usedEventTitles) {
             global.GameState.gameState.usedEventTitles = [];
         }
-        const usedTitles = global.GameState.gameState.usedEventTitles;
 
+        const usedTitles = global.GameState.gameState.usedEventTitles;
         let availableCards = mergedEventDeck.filter(card => !usedTitles.includes(card.title));
 
         if (availableCards.length === 0) {
             console.log("事件牌庫已用完，正在重置和洗牌...");
-            // 【✅ 核心修正】確保我們重置的是正確路徑下的陣列
             global.GameState.gameState.usedEventTitles = [];
             availableCards = mergedEventDeck;
 
-            // Fisher–Yates 洗牌，確保下一輪順序不同
+            // Fisher–Yates 洗牌
             for (let i = availableCards.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [availableCards[i], availableCards[j]] = [availableCards[j], availableCards[i]];
             }
-            console.log("事件牌庫已重置！");
+            console.log("事件牌庫已重置!");
         }
 
-        // 從剩餘的可抽卡中抽一張
-        return availableCards[Math.floor(Math.random() * availableCards.length)];
+        // ✅ 修正：從剩餘的可抽卡中抽一張，並立即標記為已使用
+        const selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+        if (selectedCard.title) {
+            global.GameState.gameState.usedEventTitles.push(selectedCard.title);
+        }
+
+        return selectedCard;
     }
     // ▲▲▲ 取代結束 ▲▲▲
     const finalGetRandomEvent = _origGetRandomEvent || _fallbackGetRandomEvent;
