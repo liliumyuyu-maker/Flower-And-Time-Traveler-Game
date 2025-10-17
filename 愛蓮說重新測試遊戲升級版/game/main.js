@@ -184,55 +184,67 @@
     }
 
     // --- 遊戲結束與多人模式啟動 ---
+    // main.js
     async function endGame() {
         diceBtn.disabled = true;
         UIManager.updateDiceResult("遊戲結束！正在生成創作...");
-        const results = calculateResults();
+        const results = calculateResults(); // 'results' 變數包含了所有成就資料
 
-        // 顯示個人結算畫面，並傳入一個「上傳回呼函數 (onUpload)」
-        UIManager.showEndGameModal(results, async () => {
-            // 這個函數會在玩家點擊「上傳作品並進入雅集」按鈕後被觸發
-            try {
-                UIManager.showToast("正在上傳你的創作靈感...");
+        // 顯示個人結算畫面，傳入「上傳回呼函數 (onUpload)」與「決策回顧函數 (onShowReplay)」
+        // 備註：第三個參數傳入 showDecisionTimeline，讓結算視窗中的「查看決策回顧」按鈕可以正常使用
+        UIManager.showEndGameModal(
+            results,
+            async () => {
+                // 這個函數會在玩家點擊「上傳作品並進入雅集」按鈕後被觸發
+                try {
+                    UIManager.showToast("正在上傳你的創作靈感...");
 
-                // 1. 呼叫 UI 管理員產生個人化的創作草稿
+                    // 1. 直接從結算視窗的編輯區讀取最新內容
+                    const creationDraft = document.getElementById('creation-draft-textarea').value;
 
-                const creationDraft = document.getElementById('creation-draft-textarea').value; // <-- 改成這一行，從編輯區讀取最新內容
+                    // 2. 呼叫 Firebase 管理員將創作上傳到雲端
+                    const workId = await FirebaseManager.uploadWork(currentRoomId, {
+                        authorId: currentUserId,
+                        authorName: player.name || '匿名玩家',
+                        title: `《${player.name}的感悟》`,
+                        content: creationDraft,
+                        finalStats: { // 附上最終數據供他人參考
+                            money: player.money,
+                            exp: player.exp,
+                            creativity: player.creativity,
+                            attributes: player.attributes
+                        },
+                        
+                        // 🔴【報告 Bug 修復】將完整的 'results' 物件上傳
+                        gameResults: results 
+                    });
 
-                // 2. 呼叫 Firebase 管理員將創作上傳到雲端
-                const workId = await FirebaseManager.uploadWork(currentRoomId, {
-                    authorId: currentUserId,
-                    authorName: player.name || '匿名玩家',
-                    title: `《${player.name}的感悟》`,
-                    content: creationDraft,
-                    finalStats: { // 附上最終數據供他人參考
-                        money: player.money,
-                        exp: player.exp,
-                        creativity: player.creativity,
-                        attributes: player.attributes
+                    if (workId) {
+                        UIManager.showToast("上傳成功！進入雅集。");
+                        document.getElementById('modal').classList.remove('show'); // 關閉個人結算視窗
+                        // 3. 上傳成功後，打開多人競價的榜單畫面
+                        UIManager.showLeaderboardModal(currentRoomId, currentUserId);
+                    } else {
+                        alert("作品上傳失敗，無法進入競價。");
                     }
-                });
-
-                if (workId) {
-                    UIManager.showToast("上傳成功！進入雅集。");
-                    document.getElementById('modal').classList.remove('show'); // 關閉個人結算視窗
-                    // 3. 上傳成功後，打開多人競價的榜單畫面
-                    UIManager.showLeaderboardModal(currentRoomId, currentUserId);
-                } else {
-                    alert("作品上傳失敗，無法進入競價。");
+                } catch (error) {
+                    console.error("進入競價模式失敗:", error);
+                    alert("進入競價模式時發生錯誤。");
                 }
-            } catch (error) {
-                console.error("進入競價模式失敗:", error);
-                alert("進入競價模式時發生錯誤。");
-            }
-        });
+            },
+            showDecisionTimeline // ← 新增：讓「查看決策回顧」按鈕有對應的行為
+        );
     }
+
 
     // --- 結算分數邏輯 ---
     function calculateResults() {
         const WEALTH_THRESHOLD = 2000;
         const CREATIVITY_THRESHOLD = 50;
         const BALANCE_THRESHOLD = 75; // 品格平衡分數門檻
+
+        // 🔴【上傳 Bug 修復】我們在這裡仍然需要 'player' 變數
+        const player = global.GameState.player; 
 
         const attrs = Object.values(player.attributes);
         const maxAttr = Math.max(...attrs);
@@ -243,9 +255,94 @@
         const characterChampion = balanceScore >= BALANCE_THRESHOLD;
         const creativityChampion = player.creativity >= CREATIVITY_THRESHOLD;
         const junziChampion = wealthChampion && characterChampion && creativityChampion;
+        // === ⬇️ 新增：成就檢查邏輯 ⬇️ ===
+        // 1. 從 global 狀態讀取成就定義
+        const allAchievements = global.GameState.achievements || [];
 
-        const finalScore = getNetWorth() + (player.exp * 10) + (player.creativity * 5) + (junziChampion ? 500 : 0);
-        return { finalScore, wealthChampion, characterChampion, creativityChampion, junziChampion };
+        // 2. 🔴【上傳 Bug 修復】
+        // 舊的程式碼會複製到函式：const unlockedAchievements = allAchievements.filter(ach => ach.condition(player));
+        // 新的程式碼：我們使用 .filter() 篩選，然後 .map() 來建立一個*新的、乾淨的*物件陣列，
+        // 裡面只包含 Firebase 允許的資料 (字串)。
+        const unlockedAchievements = allAchievements
+            .filter(ach => ach.condition(player))
+            .map(ach => ({
+                id: ach.id,
+                name: ach.name,
+                emoji: ach.emoji
+                // 故意排除 ach.condition 函式
+            }));
+        // === ⬆️ 新增結束 ⬆️ ===
+
+
+        // (可選) 讓每個成就也增加分數
+        const achievementBonus = unlockedAchievements.length * 50; // 每個成就加 50 分
+        const finalScore = getNetWorth() + (player.exp * 10) + (player.creativity * 5) + (junziChampion ? 500 : 0) + achievementBonus;
+
+        // === ⬇️ 修改 return 內容 ⬇️ ===
+        return {
+            finalScore,
+            wealthChampion,
+            characterChampion,
+            creativityChampion,
+            junziChampion,
+            unlockedAchievements // <-- 3. 將解鎖的成就列表加入到 results 物件
+        };
+        // === ⬆️ 修改結束 ⬆️ ===
+    }
+
+    // 在結算畫面加入
+    // ★★★ 🔴【決策 Bug 修復】★★★
+    function showDecisionTimeline() {
+        // 步驟 1: 安全檢查
+        // 🔴【決策 Bug 修復】直接從全域獲取 player
+        const player = global.GameState.player; 
+
+        // 🔴【決策 Bug 修復】改用 alert 強制提示，確保您能看到
+        if (!player || !player.history || player.history.length === 0) {
+            alert("您尚未做出任何可回顧的決策！\n\n（在 `ui-manager.js` 修復後，請重新玩一局，之前的決策已遺失。）");
+            return;
+        }
+
+        // 步驟 2: 遍歷紀錄並轉換成 HTML (最關鍵的一步)
+        // .map() 就像一個加工廠，會一條一條地處理 history 陣列中的每一筆紀錄 (entry)。
+        // 對於每一筆紀錄，它都會回傳一段格式化好的 HTML 字串。
+        const timelineHTML = player.history.map(entry => `
+        <div class="timeline-item">
+            <div class="timeline-turn">第 ${entry.turn} 回合</div>
+            <div class="timeline-content">
+                <h4 class="timeline-title">${entry.title}</h4>
+                <p class="timeline-desc">${entry.desc}</p>
+                <div class="timeline-choice">
+                    <strong>你的選擇：</strong>
+                    <span>${entry.choice}</span>
+                </div>
+                <div class="timeline-result">
+                    <strong>帶來的影響：</strong>
+                    <span>${entry.result}</span>
+                </div>
+            </div>
+        </div>
+    `).join(''); // .join('') 會把所有加工好的 HTML 字串拼接成一個完整的長字串。
+
+        // 步驟 3: 包裝與顯示
+        // ▼▼▼【修補程式碼 3.1】修改 fullContent ▼▼▼
+        // 1. 關閉按鈕的 onclick 改為關閉 'replay-modal'
+        // 2. 整個內容都放到 timeline-container 裡
+        const fullContent = `
+            <div class="timeline-container">${timelineHTML}</div>
+            <button class="manual-close-btn" 
+                    onclick="document.getElementById('replay-modal').classList.remove('show')">
+                關閉
+            </button>
+        `;
+        // ▲▲▲ 修補結束 ▲▲▲
+
+        // 最後，呼叫我們的好幫手 UIManager，請它用 showModal 函數
+        // 把標題、描述和我們精心製作的 HTML 內容，顯示在一個彈出視窗中。
+        
+        // ▼▼▼【修補程式碼 3.2】呼叫 UIManager.showReplayModal ▼▼▼
+        UIManager.showReplayModal('決策回顧', '你在旅程中的每一步選擇：', fullContent);
+        // ▲▲▲ 修補結束 ▲▲▲
     }
 
     // --- 遊戲啟動流程 ---
@@ -276,21 +373,25 @@
             }
         });
     }
+    // 教師專用頁面（需要密碼）
+    async function getTeacherDashboard(roomId) {
+        const works = await FirebaseManager.getWorksOnce(roomId);
 
+        const stats = {
+            totalPlayers: works.length,
+            avgPeony: works.reduce((sum, w) => sum + w.finalStats.attributes.peony, 0) / works.length,
+            avgLotus: works.reduce((sum, w) => sum + w.finalStats.attributes.lotus, 0) / works.length,
+            avgChrys: works.reduce((sum, w) => sum + w.finalStats.attributes.chrys, 0) / works.length
+        };
+
+        return stats;
+    }
     // --- 主程式入口 (Main Function) ---
     async function main() {
-        // 等待所有模組都準備好
         ({ GameData, UIManager, FirebaseManager } = global);
-        // ▼▼▼ 在這裡新增下面這段程式碼 ▼▼▼
-        // 遊戲一開始就檢查 sessionStorage，恢復觀戰狀態
-        if (sessionStorage.getItem('isSpectator') === 'true') {
-            global.GameState.isSpectator = true;
-        }
-        // ▲▲▲ 新增結束 ▲▲▲
         ({ player, market, gameState } = global.GameState);
-        // ▼▼▼ 請將這段「通關密語」偵測邏輯貼在這裡 ▼▼▼
-        // --- 老師專用「觀戰模式」彩蛋 ---
-        const TEACHER_KEY = "momohu"; // 您可以自己修改這個密語
+
+        const TEACHER_KEY = "momohu";
         const playerNameInputForTeacher = document.getElementById('player-name-input');
         const spectateBtnForTeacher = document.getElementById('spectate-room-btn');
 
@@ -303,81 +404,86 @@
                 }
             });
         }
-        // ▲▲▲ 貼上結束 ▲▲▲
 
         try {
-            // 步驟 1: 連接 Firebase 並取得使用者 ID
             const { userId } = await FirebaseManager.initFirebase();
-            currentUserId = userId; // 將使用者 ID 存起來
+            currentUserId = userId;
             document.getElementById('user-id-display').textContent = `你的專屬ID: ${userId}`;
 
-            // 步驟 2: 為大廳的「創建雅集」按鈕綁定事件
+            // ✅ 【觀戰模式優化】: 檢查 Local Storage，如果處於觀戰模式，直接跳轉
+            const isSpectating = localStorage.getItem('isSpectator') === 'true';
+            const spectatingRoomId = localStorage.getItem('spectatingRoomId');
+
+            if (isSpectating && spectatingRoomId) {
+                console.log(`偵測到觀戰模式，正在重新進入房間 #${spectatingRoomId}`);
+                global.GameState.isSpectator = true;
+                lobbyContainer.style.display = 'none';
+                // 開發者提示：若要完美退出觀戰，ui-manager.js 中的離開按鈕應在重整頁面前
+                // 執行 localStorage.removeItem('isSpectator'); 和 localStorage.removeItem('spectatingRoomId');
+                UIManager.showLeaderboardModal(spectatingRoomId, currentUserId);
+                return; // 提前結束函數，不綁定大廳的遊戲按鈕
+            }
+
+            // --- 正常遊戲流程：綁定大廳按鈕 ---
             createRoomBtn.addEventListener('click', async () => {
                 const playerName = document.getElementById('player-name-input').value.trim();
                 if (!playerName) { alert("請先輸入你的名號！"); return; }
-
-                createRoomBtn.textContent = "創建中..."; createRoomBtn.disabled = true;
+                createRoomBtn.disabled = true;
+                createRoomBtn.textContent = "創建中...";
                 const room = await FirebaseManager.createRoom(playerName);
                 if (room) {
-                    startGame(playerName, room.id); // 成功創建後，啟動遊戲
+                    startGame(playerName, room.id);
                 } else {
-                    createRoomBtn.textContent = "創建雅集"; createRoomBtn.disabled = false;
+                    createRoomBtn.disabled = false;
+                    createRoomBtn.textContent = "創建雅集";
                 }
             });
 
-            // 步驟 3: 為大廳的「加入雅集」按鈕綁定事件
             joinRoomBtn.addEventListener('click', async () => {
                 const playerName = document.getElementById('player-name-input').value.trim();
                 const roomId = document.getElementById('room-id-input').value.trim();
                 if (!playerName || !roomId) { alert("請輸入名號與雅集編號！"); return; }
-
-                joinRoomBtn.textContent = "加入中..."; joinRoomBtn.disabled = true;
+                joinRoomBtn.disabled = true;
+                joinRoomBtn.textContent = "加入中...";
                 const room = await FirebaseManager.joinRoom(roomId, playerName);
                 if (room) {
-                    startGame(playerName, room.id); // 成功加入後，啟動遊戲
+                    startGame(playerName, room.id);
                 } else {
-                    joinRoomBtn.textContent = "加入雅集"; joinRoomBtn.disabled = false;
+                    joinRoomBtn.disabled = false;
+                    joinRoomBtn.textContent = "加入雅集";
                 }
             });
-            // 步驟 4: 為大廳的「觀戰雅集」按鈕綁定事件
+
             const spectateRoomBtn = document.getElementById('spectate-room-btn');
             spectateRoomBtn.addEventListener('click', async () => {
                 const playerName = document.getElementById('player-name-input').value.trim() || '觀察員';
                 const roomId = document.getElementById('room-id-input').value.trim();
                 if (!roomId) { alert("請輸入您想觀戰的雅集編號！"); return; }
 
-                spectateRoomBtn.textContent = "進入中...";
                 spectateRoomBtn.disabled = true;
-
-                // 觀戰也需要先「加入」房間，讓您的名字出現在玩家列表
+                spectateRoomBtn.textContent = "進入中...";
                 const room = await FirebaseManager.joinRoom(roomId, playerName);
 
                 if (room) {
-                    // 成功加入後，隱藏大廳
                     lobbyContainer.style.display = 'none';
                     global.GameState.player.name = playerName;
-                    currentRoomId = roomId; // 記錄當前房間ID
+                    currentRoomId = roomId;
 
-                    // ★★★★★【本次核心修改】★★★★★
-                    // 在這裡設定一個全域的觀戰旗標，讓其他檔案知道現在是觀戰模式
+                    // ✅ 【觀戰模式優化】: 統一使用 localStorage 儲存狀態
                     global.GameState.isSpectator = true;
-                    // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
-                    sessionStorage.setItem('isSpectator', 'true');
-                    // ★★★★★★★★★★★★★★★★★★★
+                    localStorage.setItem('isSpectator', 'true');
+                    localStorage.setItem('spectatingRoomId', roomId);
 
-                    // ✨ 關鍵：不呼叫 startGame()，而是直接打開雅集排行榜！
                     UIManager.showLeaderboardModal(roomId, currentUserId);
-
                 } else {
-                    // 如果加入失敗，恢復按鈕狀態
-                    spectateRoomBtn.textContent = "觀戰雅集";
                     spectateRoomBtn.disabled = false;
+                    spectateRoomBtn.textContent = "觀戰雅集";
                 }
             });
 
         } catch (error) {
             console.error("遊戲初始化失敗:", error);
-            alert("錯誤：遊戲初始化失敗，請檢查主控台訊息。");
+            alert("錯誤：遊戲初始化失敗, 請檢查主控台訊息。");
         }
     }
 
