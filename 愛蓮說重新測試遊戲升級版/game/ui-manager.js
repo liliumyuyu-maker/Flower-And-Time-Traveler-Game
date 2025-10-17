@@ -1,11 +1,15 @@
 (function (global) {
     'use strict';
 
-    let player, market, gameState;
+    // 🔴 移除此處的 let player, market, gameState;
+    // 經測試，此處的模組級變數是導致「決策回顧」Bug 的元兇
+    // 我們將在函數中直接使用 global.GameState.player
 
     // --- DOM 元素快取 ---
     const $ = (sel) => document.querySelector(sel);
     let modalEl, eventTitleEl, eventDescEl, eventContentEl, eventResultEl, leaderboardModalEl, worksListEl, lbSubtitleEl, lbCloseBtn;
+    // ▼▼▼【修補程式碼 2.1】新增 Replay Modal 的變數 ▼▼▼
+    let replayModalEl, replayTitleEl, replayDescEl, replayContentEl, replayResultEl;
 
     // ── 行動版 HUD 同步工具 ──
     function updateMobileHUD() {
@@ -53,6 +57,14 @@
         worksListEl = $('#works-list');
         lbSubtitleEl = $('#lb-subtitle');
         lbCloseBtn = $('#lb-close');
+
+        // ▼▼▼【修補程式碼 2.2】快取新的 Replay Modal 元素 ▼▼▼
+        replayModalEl = $('#replay-modal');
+        replayTitleEl = $('#replay-title');
+        replayDescEl = $('#replay-desc');
+        replayContentEl = $('#replay-content');
+        replayResultEl = $('#replay-result');
+        // ▲▲▲ 修補結束 ▲▲▲
     }
 
 
@@ -96,7 +108,8 @@
 
     // --- 更新玩家儀表板 ---
     function updatePlayerDashboard() {
-        ({ player, market, gameState } = global.GameState);
+        // 🔴【決策 Bug 修復】不再依賴此處設定模組變數
+        const { player, market, gameState } = global.GameState;
         if (!player) return;
 
         $('#stat-money').textContent = `💰${player.money.toLocaleString()}`;
@@ -139,8 +152,25 @@
         modalEl.classList.add('show');
     }
 
+    // ▼▼▼【修補程式碼 2.3】新增一個*專門*給「決策回顧」用的 showReplayModal 函數 ▼▼▼
+    function showReplayModal(title, desc, contentHTML, resultText = '') {
+        replayTitleEl.textContent = title;
+        replayDescEl.textContent = desc;
+        replayContentEl.innerHTML = contentHTML;
+        replayResultEl.textContent = resultText;
+        replayModalEl.classList.add('show');
+    }
+    // ▲▲▲ 修補結束 ▲▲▲
+
     // --- 事件視窗 (整合了「感官之石」、「幽靈計時器修正」與「手動關閉」三大功能) ---
     function showEventModal(card, onChoice) {
+        // 🔴【決策 Bug 修復】直接從全域獲取 player
+        const player = global.GameState.player;
+        if (!player) {
+            console.error("showEventModal 找不到 player 狀態！");
+            return;
+        }
+
         // 這一部分完全不變，負責產生選項按鈕
         let contentHTML = '';
         if (card.choices) {
@@ -204,7 +234,40 @@
                 let autoCloseTimer = null;
 
                 const choice = card.choices[e.target.dataset.choiceIndex];
-                const resultText = choice.effect(player);
+
+                // 🔴【決策 Bug 修復】
+                // 1. 在 history push 之前，先儲存舊狀態
+                // 2. 統一對 `global.GameState.player` 進行操作
+                const oldMoney = global.GameState.player.money;
+                const oldExp = global.GameState.player.exp;
+                const oldCreativity = global.GameState.player.creativity;
+                const oldAttrs = { ...global.GameState.player.attributes };
+
+                // 執行效果，並取得結果文字
+                const resultText = choice.effect(global.GameState.player);
+                // ▼▼▼【🔴 TRIGGER_EVENT 修復】▼▼▼
+                // 檢查 resultText，並決定要*真正*存入紀錄的文字
+                let resultToRecord = resultText;
+                if (resultText === 'TRIGGER_EVENT') {
+                    resultToRecord = "你動身前往，觸發了新的奇遇..."; // 或者您想顯示的其他文字
+                }
+                // ▲▲▲ 修復結束 ▲▲▲
+
+                // ★★★【決策 Bug 修復】將決策記錄移到 *執行效果之後* ★★★
+                try {
+                    if (global.GameState.player && Array.isArray(global.GameState.player.history)) {
+                        global.GameState.player.history.push({
+                            turn: global.GameState.gameState.turn,
+                            title: card.title,
+                            desc: card.desc,
+                            choice: choice.text,
+                            result: resultToRecord // <--- 🔴 修改這裡！
+                        });
+                    }
+                } catch (err) {
+                    console.warn("記錄決策時發生錯誤:", err);
+                }
+                // ★★★ 記錄結束 ★★★
 
                 // 2. 【暗號辨識系統】，處理「尋訪名士」的特殊情況
                 if (resultText === 'TRIGGER_EVENT') {
@@ -214,22 +277,19 @@
                 }
 
                 // 3. 如果不是暗號，就走正常的「顯示結果」流程
-                const oldMoney = player.money;
-                const oldExp = player.exp;
-                const oldCreativity = player.creativity;
-                const oldAttrs = { ...player.attributes };
+                // (舊狀態的儲存已移到前面)
 
                 try { // 防呆機制
                     const clamp = v => Math.max(0, Math.min(100, v | 0));
-                    if (player && player.attributes) {
-                        player.attributes.peony = clamp(player.attributes.peony);
-                        player.attributes.lotus = clamp(player.attributes.lotus);
-                        player.attributes.chrys = clamp(player.attributes.chrys);
+                    if (global.GameState.player && global.GameState.player.attributes) {
+                        global.GameState.player.attributes.peony = clamp(global.GameState.player.attributes.peony);
+                        global.GameState.player.attributes.lotus = clamp(global.GameState.player.attributes.lotus);
+                        global.GameState.player.attributes.chrys = clamp(global.GameState.player.attributes.chrys);
                     }
-                    if (player) {
-                        player.money = Math.max(0, player.money | 0);
-                        player.creativity = Math.max(0, player.creativity | 0);
-                        player.exp = Math.max(0, player.exp | 0);
+                    if (global.GameState.player) {
+                        global.GameState.player.money = Math.max(0, global.GameState.player.money | 0);
+                        global.GameState.player.creativity = Math.max(0, global.GameState.player.creativity | 0);
+                        global.GameState.player.exp = Math.max(0, global.GameState.player.exp | 0);
                     }
                 } catch (_) { }
 
@@ -250,12 +310,13 @@
                 eventContentEl.appendChild(closeBtn); // 將按鈕加入畫面
 
                 // 6. 執行「感官之石」的數值閃爍動畫
-                flashStat($('#stat-money'), player.money, oldMoney);
-                flashStat($('#stat-exp'), player.exp, oldExp);
-                flashStat($('#stat-creativity'), player.creativity, oldCreativity);
-                for (const attr in player.attributes) {
-                    if (player.attributes[attr] !== oldAttrs[attr]) {
-                        const value = Math.max(0, Math.min(100, player.attributes[attr]));
+                // 🔴【決策 Bug 修復】統一讀取 `global.GameState.player` 的新狀態
+                flashStat($('#stat-money'), global.GameState.player.money, oldMoney);
+                flashStat($('#stat-exp'), global.GameState.player.exp, oldExp);
+                flashStat($('#stat-creativity'), global.GameState.player.creativity, oldCreativity);
+                for (const attr in global.GameState.player.attributes) {
+                    if (global.GameState.player.attributes[attr] !== oldAttrs[attr]) {
+                        const value = Math.max(0, Math.min(100, global.GameState.player.attributes[attr]));
                         const fillElement = $(`#attr-${attr} .attribute-fill`);
                         if (fillElement) fillElement.style.width = `${value}%`;
                     }
@@ -281,12 +342,15 @@
     }
     // --- 市場視窗 ---
     function showMarketModal(onComplete) {
+        // 🔴【決策 Bug 修復】直接從全域獲取
+        const { player, market } = global.GameState;
+
         const contentHTML = `
             <table class="market-table">
                 <thead><tr><th>花卉</th><th>現價</th><th>持有</th><th>買入</th><th>賣出</th></tr></thead>
                 <tbody>
                     <tr><td>🌺 牡丹</td><td>${market.prices.peony}</td><td>${player.inventory.peony}</td><td><input type="number" id="buy-peony" min="0" value="0"></td><td><input type="number" id="sell-peony" min="0" max="${player.inventory.peony}" value="0"></td></tr>
-                    <tr><td>🪷 蓮</td><td>${market.prices.lotus}</td><td>${player.inventory.lotus}</td><td><input type="number" id="buy-lotus" min="0" value="0"></td><td><input type="number" id="sell-lotus" min="0" max="${player.inventory.lotus}" value="0"></td></tr>
+                    <tr><td>🪷 蓮</td><td>${market.prices.lotus}</td><td>${player.inventory.lotus}</td><td><input type="number" id="buy-lotus" min="0" value="0"></td><td><input type="number"id="sell-lotus" min="0" max="${player.inventory.lotus}" value="0"></td></tr>
                     <tr><td>🌼 菊</td><td>${market.prices.chrys}</td><td>${player.inventory.chrys}</td><td><input type="number" id="buy-chrys" min="0" value="0"></td><td><input type="number" id="sell-chrys" min="0" max="${player.inventory.chrys}" value="0"></td></tr>
                 </tbody>
             </table>
@@ -334,7 +398,10 @@
     // --- 結算視窗 ---
     // ▼▼▼ 請用這段全新的 showEndGameModal 函數，取代掉舊的 ▼▼▼
     // --- 結算視窗 (整合了新手引導彈窗) ---
-    function showEndGameModal(results, onUpload) {
+    function showEndGameModal(results, onUpload, onShowReplay) { // <-- 新增 onShowReplay
+        // 🔴【決策 Bug 修復】直接從全域獲取
+        const { player, gameState } = global.GameState;
+
         const contentHTML = `
         <div class="end-game-results">
             <div class="result-card ${results.wealthChampion ? 'earned' : ''}"><div class="icon">💰</div><h3>財富冠軍</h3><p class="desc">市場的巨擘。</p></div>
@@ -353,11 +420,27 @@
                 <div>🌼 菊花: ${player.inventory.chrys}</div>
             </div>
         </div>
+        ${/* 檢查是否有解鎖成就，如果有的話才顯示這個區塊 */''}
+        ${results.unlockedAchievements && results.unlockedAchievements.length > 0 ? `
+        <div class="achievements-summary">
+            <div class="summary-title">解鎖成就 (${results.unlockedAchievements.length})</div>
+            <div class="achievements-list">
+                ${/* 遍歷成就陣列，為每個成就生成一個 HTML 項目 */''}
+                ${results.unlockedAchievements.map(ach => `
+                    <div class="achievement-item">
+                        <span class="ach-emoji">${ach.emoji}</span>
+                        <span class="ach-name">${ach.name}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
         <div class="creation-draft-box">
             <label for="creation-draft-textarea">你的創作草稿 (請在此編輯)</label>
             <textarea id="creation-draft-textarea" rows="6"></textarea>
         </div>
         <button id="upload-btn" class="special" style="width: 100%; margin-top: 20px;">上傳作品並進入雅集</button>
+        <button id="replay-btn" style="width: 100%; margin-top: 10px;">查看決策回顧</button>
         <button id="restart-btn" style="width: 100%; margin-top: 10px;">重新開始一局</button>
     `;
         showModal('旅程結算', `經過 ${gameState.maxTurns} 回合的探索,你的最終成就如下:`, contentHTML, `你的最終總分: ${results.finalScore.toLocaleString()}`);
@@ -370,6 +453,7 @@
         }
 
         $('#upload-btn').onclick = onUpload;
+        $('#replay-btn').onclick = onShowReplay; // <-- 綁定新按鈕的事件
         $('#restart-btn').onclick = () => window.location.reload();
 
         // 【✅ 核心優化】在結算畫面出現後，延遲一秒彈出引導提示
@@ -385,7 +469,8 @@
 
     // --- 生成創作草稿 ---
     function buildWorkDraftForUpload() {
-        const p = player;
+        // 🔴【決策 Bug 修復】直接從全域獲取
+        const p = global.GameState.player;
         const attrs = p.attributes;
         const dominantAttr = Object.keys(attrs).reduce((a, b) => attrs[a] > attrs[b] ? a : b);
 
@@ -479,7 +564,7 @@
             }
         }
 
-        // ★★★★★【本次核心修改】★★★★★
+        // ★★★★★【🔴 觀戰 Bug 修復】★★★★★
         // 4. 優化離開雅集的確認訊息，讓玩家更清楚後果
         lbCloseBtn.onclick = () => {
             const confirmMsg = `
@@ -496,6 +581,13 @@
     `.trim();
 
             if (confirm(confirmMsg)) {
+                // 🔴【觀戰 Bug 修復】在重整頁面前，先清除觀戰狀態
+                if (global.GameState && global.GameState.isSpectator) {
+                    localStorage.removeItem('isSpectator');
+                    localStorage.removeItem('spectatingRoomId');
+                    console.log('已清除觀戰狀態。');
+                }
+
                 leaderboardModalEl.classList.remove('show');
                 if (window.unsubscribe) window.unsubscribe();
                 window.location.reload();
@@ -505,6 +597,7 @@
     }
 
     // --- 生成報告函數 (獨立出來) ---
+    // --- 🔴【iPhone Bug 修復】使用最穩定、相容性最高的 Blob + <a> tag 方式 ---
     function generateReport(roomId, works) {
         if (!works || works.length === 0) {
             alert('目前沒有作品可以匯出');
@@ -611,7 +704,9 @@
             font-size: 15px;
             margin-bottom: 20px;
         }
-        .stats-section {
+        
+        /* 🔴【報告 Bug 修復】新增/修改成就區塊的 CSS */
+        .stats-section, .achievements-section {
             background: #f0f9ff;
             padding: 15px;
             border-radius: 10px;
@@ -622,12 +717,17 @@
             margin-bottom: 10px;
             color: #0f172a;
         }
-        .stats-grid {
+        .stats-grid, .ach-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             font-size: 13px;
         }
+        .achievements-section {
+            background: #fffbeb; /* 改成淡黃色背景 */
+        }
+        /* 🔴 修復結束 */
+
         .comments-section {
             background: #fef9f3;
             padding: 15px;
@@ -698,8 +798,7 @@
             
             <div class="work-content">${work.content || '(無內容)'}</div>
             
-            ${/* ▼▼▼ 這裡是本次修正的核心 ▼▼▼ */ ''}
-                ${work.finalStats ? `
+            ${work.finalStats ? `
                 <div class="stats-section">
                     <div class="stats-title">📊 作者最終數據</div>
                     <div class="stats-grid">
@@ -711,9 +810,24 @@
                         <div>🌼 自在: ${work.finalStats.attributes?.chrys || 0}</div>
                     </div>
                 </div>
-                ` : ''}
-                ${/* ▲▲▲ 修正結束 ▲▲▲ */ ''}
+            ` : ''}
             
+            ${work.gameResults ? `
+                <div class="achievements-section">
+                    <div class="stats-title">🏆 獲得成就</div>
+                    <div class="ach-grid">
+                        ${work.gameResults.wealthChampion ? '<div>💰 財富冠軍</div>' : ''}
+                        ${work.gameResults.characterChampion ? '<div>🌿 品格冠軍</div>' : ''}
+                        ${work.gameResults.creativityChampion ? '<div>⭐ 創作冠軍</div>' : ''}
+                        ${work.gameResults.junziChampion ? '<div>🏅 君子冠軍</div>' : ''}
+                        ${(work.gameResults.unlockedAchievements && work.gameResults.unlockedAchievements.length > 0)
+                    ? work.gameResults.unlockedAchievements.map(ach => `<div>${ach.emoji} ${ach.name}</div>`).join('')
+                    : ''
+                }
+                        ${!work.gameResults.wealthChampion && !work.gameResults.characterChampion && !work.gameResults.creativityChampion && !work.gameResults.junziChampion && (!work.gameResults.unlockedAchievements || work.gameResults.unlockedAchievements.length === 0) ? '<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8;">(無)</div>' : ''}
+                    </div>
+                </div>
+            ` : ''}
             <div class="comments-section">
                 <div class="stats-title">💬 雅集回饋 (${work.comments?.length || 0} 則)</div>
                 ${work.comments && work.comments.length > 0
@@ -737,17 +851,33 @@
 </body>
 </html>`;
 
-        const blob = new Blob([reportHTML], { type: 'application/octet-stream' });
+        // 🔴【iPhone Bug 關鍵修復】
+        const blob = new Blob([reportHTML], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = `雅集${roomId}_作品集_${new Date().toISOString().slice(0, 10)}.html`;
+
+        // 檢查是否為 iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        if (isIOS) {
+            // iOS：設定在新分頁開啟。Safari 會在新分頁中開啟 Blob URL
+            link.target = '_blank';
+            showToast('📱 iOS：正在開啟新分頁... 請在新分頁中點擊「分享」→「儲存到檔案」', 4000);
+        } else {
+            // 桌面版與 Android：維持原本的直接下載
+            showToast('✅ 已觸發下載! 請檢查您的下載項目。');
+        }
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
 
-        showToast('✅ 已觸發下載！請檢查您的下載項目。');
+        // 🔴 *不能* 立刻執行 URL.revokeObjectURL(url);
+        // 執行了會導致 iOS 的新分頁內容立刻失效，變成空白頁。
+        // 雖然這會導致一個微小的記憶體洩漏（直到頁面關閉），
+        // 但這是確保 iOS 新分頁能成功載入 Blob 內容的唯一可靠方法。
     }
 
     // --- 渲染作品列表 (獨立出來) ---
@@ -810,7 +940,7 @@
                         try {
                             await global.FirebaseManager.addCommentToWork(global.GameState.roomId, work.id, {
                                 text: commentText,
-                                authorName: player.name || '匿名旅人',
+                                authorName: global.GameState.player.name || '匿名旅人', // 🔴 使用全域 player
                                 createdAt: new Date().toISOString()
                             });
                             commentInput.value = '';
@@ -829,17 +959,17 @@
                     voteBtn.onclick = async () => {
                         const amount = parseInt($(`#vote-amt-${work.id}`).value) || 0;
                         if (amount <= 0) return;
-                        if (player.money < amount) { showToast('花幣不足!'); return; }
+                        if (global.GameState.player.money < amount) { showToast('花幣不足!'); return; } // 🔴 使用全域 player
 
                         voteBtn.disabled = true;
-                        player.money -= amount;
+                        global.GameState.player.money -= amount; // 🔴 使用全域 player
                         updatePlayerDashboard();
 
                         try {
                             await global.FirebaseManager.voteWork(global.GameState.roomId, work.id, userId, amount);
                             showToast(`成功投資 ${amount} 花幣!`);
                         } catch (e) {
-                            player.money += amount;
+                            global.GameState.player.money += amount; // 🔴 使用全域 player
                             updatePlayerDashboard();
                             alert("投資失敗,請稍後再試。");
                             voteBtn.disabled = false;
@@ -913,17 +1043,21 @@
         showEventModal,
         showMarketModal,
         showEndGameModal,
+        // 🔴【決策回顧 Bug 修復】在這裡補上 showModal
+        showModal,
+        // ▼▼▼【修補程式碼 2.4】匯出新函數 ▼▼▼
+        showReplayModal,
+        // ▲▲▲ 修補結束 ▲▲▲
         buildWorkDraftForUpload,
         showLeaderboardModal,
         showToast,
         updateDiceResult,
         generateReport,
-        updateMobileHUD // <-- 在這裡【加上】這一行
+        updateMobileHUD
     };
     // ... 其他程式碼 ...
 
-    // ▼▼▼ 請將這個全新的函數，貼到 ui-manager.js 的最底部 ▼▼▼
-    // --- 遊戲結束時的引導彈窗 ---
+    // ▼▼▼ 遊戲結束時的引導彈窗 (這段不用動) ▼▼▼
     function showEndGameGuidePopup() {
         const guidePopup = document.createElement('div');
         guidePopup.className = 'endgame-guide-popup';
