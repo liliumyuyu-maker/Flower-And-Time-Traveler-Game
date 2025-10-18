@@ -36,12 +36,15 @@
         UIManager.updateDiceResult(`你擲出了 ${roll} 點！`);
 
         setTimeout(() => {
-            const newPosition = (player.position + roll) % GameData.TOTAL_CELLS;
-            player.position = newPosition;
-            const newBoardIndex = GameData.boardPath[newPosition];
-            UIManager.movePlayerToken(newBoardIndex);
-            setTimeout(() => handleCellAction(newBoardIndex), 600);
-        }, 1000);
+            // 呼叫新的逐格移動函數
+            // 1. 傳入擲出的點數 (roll)
+            // 2. 傳入一個「全部走完才執行」的回呼函數
+            UIManager.movePlayerStepByStep(roll, () => {
+                // 這個函數會在棋子走完最後一格後才被觸發
+                const finalBoardIndex = GameData.boardPath[player.position];
+                handleCellAction(finalBoardIndex);
+            });
+        }, 1000); // 擲骰子 1 秒後，開始移動
     }
 
     // 【最終修正版】 handleCellAction 函數
@@ -69,7 +72,7 @@
                             }
                         },
                         {
-                            text: '「尋訪名士，探求新知。」',
+                            text: '「把握時機，再歷奇遇。」',
                             // ▼▼▼ 這是我們的核心修正 ▼▼▼
                             // 我們不再回傳文字，而是回傳一個特殊的「暗號」
                             effect: (player) => 'TRIGGER_EVENT'
@@ -156,7 +159,7 @@
     }
 
 
-    function nextTurn() {
+    function nextTurn(animationDelay = 100) {
         // 1. 先完成所有數據的計算與狀態變更
         if (gameState.turn >= gameState.maxTurns) {
             endGame();
@@ -164,12 +167,26 @@
         }
         gameState.turn++;
 
+        // ▼▼▼ 這是我們的修改 ▼▼▼
+        // 1.1 先儲存舊價格
+        const oldPrices = { ...global.GameState.market.prices };
+        const changes = {}; // 用來存放變化
+        // ▲▲▲ 修改結束 ▲▲▲
+
         for (const k in market.prices) {
             const r = (Math.random() * 0.10 - 0.05); // -5% ~ +5%
-            market.prices[k] = Math.max(1, Math.round(market.prices[k] * (1 + r)));
+            const newPrice = Math.max(1, Math.round(market.prices[k] * (1 + r)));
+
+            // ▼▼▼ 這是我們的修改 ▼▼▼
+            // 1.2 儲存變化
+            if (newPrice !== oldPrices[k]) {
+                changes[k] = newPrice - oldPrices[k];
+            }
+            market.prices[k] = newPrice;
+            // ▲▲▲ 修改結束 ▲▲▲
         }
 
-        if ((gameState.turn % 3) === 1) {
+        if (Object.keys(changes).length > 0) { // 檢查是否真的有變化
             UIManager.showToast("市場微幅波動，花價有變化。");
         }
 
@@ -177,12 +194,49 @@
 
         // 2. 所有數據都確定後，最後再統一更新所有畫面
         UIManager.updateDiceResult('你的回合，請擲骰子。');
-        UIManager.updatePlayerDashboard(); // 包含更新桌面儀表板與手機HUD
+        UIManager.updatePlayerDashboard(); // 儀表板(包含庫存)會在這裡全部重繪
+
+        // ▼▼▼ 這是我們的修改 ▼▼▼
+        // 2.1 儀表板重繪後，我們手動為變化的價格加上動畫
+        setTimeout(() => { // 根據傳入的 animationDelay 延遲
+            for (const flower in changes) {
+                const changeAmount = changes[flower];
+                // 用我們在步驟 1 新增的 ID 找到元素
+                const priceEl = document.getElementById(`inv-price-${flower}`);
+
+                if (priceEl) {
+                    // 1. 手動添加閃爍動畫 (借用您方案 3 的 CSS)
+                    if (changeAmount > 0) {
+                        priceEl.classList.add('stat-flash-increase');
+                    } else {
+                        priceEl.classList.add('stat-flash-decrease');
+                    }
+
+                    // 2. 手動創建浮動提示 (借用您方案 3 的邏輯)
+                    const changeIndicator = document.createElement('div');
+                    changeIndicator.className = 'stat-change-indicator';
+                    changeIndicator.textContent = changeAmount > 0 ? `+${changeAmount}` : `${changeAmount}`; // 負號會自帶
+                    changeIndicator.classList.add(changeAmount > 0 ? 'positive' : 'negative');
+
+                    priceEl.style.position = 'relative'; // 確保定位正確
+                    priceEl.appendChild(changeIndicator);
+
+                    // 3. 清理動畫
+                    setTimeout(() => {
+                        priceEl.classList.remove('stat-flash-increase', 'stat-flash-decrease');
+                        if (changeIndicator.parentElement) {
+                            changeIndicator.remove();
+                        }
+                    }, 1500); // 配合 CSS 的 1.5s
+                }
+            }
+        }, animationDelay); // 使用變數
+        // ▲▲▲ 修改結束 ▲▲▲
+
         diceBtn.disabled = false;
         // ▼▼▼ 在這裡加上一行，開始發光 ▼▼▼
         diceBtn.classList.add('is-active-turn');
     }
-
     // --- 遊戲結束與多人模式啟動 ---
     // main.js
     async function endGame() {
@@ -214,9 +268,9 @@
                             creativity: player.creativity,
                             attributes: player.attributes
                         },
-                        
+
                         // 🔴【報告 Bug 修復】將完整的 'results' 物件上傳
-                        gameResults: results 
+                        gameResults: results
                     });
 
                     if (workId) {
@@ -244,7 +298,7 @@
         const BALANCE_THRESHOLD = 75; // 品格平衡分數門檻
 
         // 🔴【上傳 Bug 修復】我們在這裡仍然需要 'player' 變數
-        const player = global.GameState.player; 
+        const player = global.GameState.player;
 
         const attrs = Object.values(player.attributes);
         const maxAttr = Math.max(...attrs);
@@ -295,7 +349,7 @@
     function showDecisionTimeline() {
         // 步驟 1: 安全檢查
         // 🔴【決策 Bug 修復】直接從全域獲取 player
-        const player = global.GameState.player; 
+        const player = global.GameState.player;
 
         // 🔴【決策 Bug 修復】改用 alert 強制提示，確保您能看到
         if (!player || !player.history || player.history.length === 0) {
@@ -339,7 +393,7 @@
 
         // 最後，呼叫我們的好幫手 UIManager，請它用 showModal 函數
         // 把標題、描述和我們精心製作的 HTML 內容，顯示在一個彈出視窗中。
-        
+
         // ▼▼▼【修補程式碼 3.2】呼叫 UIManager.showReplayModal ▼▼▼
         UIManager.showReplayModal('決策回顧', '你在旅程中的每一步選擇：', fullContent);
         // ▲▲▲ 修補結束 ▲▲▲
@@ -359,7 +413,7 @@
 
         UIManager.createBoard();
         UIManager.updatePlayerDashboard();
-        setTimeout(() => UIManager.movePlayerToken(GameData.boardPath[player.position]), 100);
+        setTimeout(() => UIManager.movePlayerToken(GameData.boardPath[player.position], 0), 100);
         diceBtn.addEventListener('click', rollDice);
         // ★ 新增：包裝面板更新＋初始化 HUD 與市場按鈕
         wrapUpdatePlayerDashboard();
@@ -369,7 +423,7 @@
         window.addEventListener('resize', () => {
             if (global.GameData && global.UIManager) {
                 const currentBoardIndex = global.GameData.boardPath[global.GameState.player.position];
-                global.UIManager.movePlayerToken(currentBoardIndex);
+                global.UIManager.movePlayerToken(currentBoardIndex, 0);
             }
         });
     }
