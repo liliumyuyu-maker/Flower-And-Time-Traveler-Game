@@ -32,19 +32,41 @@
     function flashStat(element, newValue, oldValue) {
         if (!element || newValue === oldValue) return;
 
+        const change = newValue - oldValue;
+        const changeAmount = Math.abs(change);
+
+        // 更新數字
         element.textContent = element.textContent.replace(oldValue.toLocaleString(), newValue.toLocaleString());
 
-        const change = newValue - oldValue;
+        // 添加閃爍動畫
         if (change > 0) {
             element.classList.add('stat-flash-increase');
         } else if (change < 0) {
             element.classList.add('stat-flash-decrease');
         }
 
-        // 動畫結束後移除 class，方便下次觸發
+        // 👉 新功能：創建浮動的變化量提示
+        const changeIndicator = document.createElement('div');
+        changeIndicator.className = 'stat-change-indicator';
+        changeIndicator.textContent = change > 0 ? `+${changeAmount}` : `-${changeAmount}`;
+
+        if (change > 0) {
+            changeIndicator.classList.add('positive');
+        } else {
+            changeIndicator.classList.add('negative');
+        }
+
+        // 插入到數字旁邊
+        element.style.position = 'relative';
+        element.appendChild(changeIndicator);
+
+        // 清理動畫
         setTimeout(() => {
             element.classList.remove('stat-flash-increase', 'stat-flash-decrease');
-        }, 700);
+            if (changeIndicator.parentElement) {
+                changeIndicator.remove();
+            }
+        }, 1500); // 從 700ms 延長到 1500ms，讓學生有更多時間看到
     }
     // --- 初始化 UI 元素 ---
     function initUI() {
@@ -72,9 +94,9 @@
     function createBoard() {
         const boardEl = $('#game-board');
         if (!boardEl) return;
-        boardEl.innerHTML = '<div id="player-token"></div>';
+        boardEl.innerHTML = ''; // <--- ✅ 1. 先清空棋盤
 
-        // 我們會遍歷 boardLayout 中的「每一個」位置，包含 null
+        // ✅ 2. 先把所有格子放進去
         global.GameData.boardLayout.forEach((type, index) => {
             const cell = document.createElement('div');
             cell.classList.add('board-cell');
@@ -94,16 +116,18 @@
                     cell.classList.add('cell-market');
                     text = '市場';
                     break;
-                // ▼▼▼ 這是關鍵的新增 ▼▼▼
                 case null:
                     cell.classList.add('cell-empty');
-                    // 空白格不需要文字
                     break;
-                // ▲▲▲ 新增結束 ▲▲▲
             }
             cell.textContent = text;
             boardEl.appendChild(cell);
         });
+
+        // ✅ 3. 最後才把棋子放進去
+        const playerTokenEl = document.createElement('div');
+        playerTokenEl.id = 'player-token';
+        boardEl.appendChild(playerTokenEl); // <--- 確保棋子在 DOM 結構中是最後一個
     }
 
     // --- 更新玩家儀表板 ---
@@ -127,20 +151,88 @@
         for (const flower in player.inventory) {
             const itemEl = document.createElement('div');
             itemEl.className = 'inventory-item';
-            itemEl.innerHTML = `<span>${flowerNames[flower]} (價: ${market.prices[flower]})</span><strong>${player.inventory[flower]}</strong>`;
+            itemEl.innerHTML = `<span>${flowerNames[flower]} (價: <span class="inv-price" id="inv-price-${flower}">${market.prices[flower]}</span>)</span><strong id="inv-qty-${flower}">${player.inventory[flower]}</strong>`;
             inventoryEl.appendChild(itemEl);
         }
         $('#turn-counter').textContent = `第 ${gameState.turn} / ${gameState.maxTurns} 回合`;
     }
 
     // --- 移動玩家棋子 ---
-    function movePlayerToken(newBoardIndex) {
+    // --- 移動玩家棋子 (v2.0，支援指定速度與回呼) ---
+    function movePlayerToken(newBoardIndex, duration = 600, onFinishCallback = null) {
         const cell = $(`.board-cell[data-index='${newBoardIndex}']`);
         if (cell) {
             const playerTokenEl = $('#player-token');
-            playerTokenEl.style.left = `${cell.offsetLeft + cell.offsetWidth / 2 - playerTokenEl.offsetWidth / 2}px`;
-            playerTokenEl.style.top = `${cell.offsetTop + cell.offsetHeight / 2 - playerTokenEl.offsetHeight / 2}px`;
+
+            const currentLeft = playerTokenEl.offsetLeft;
+            const currentTop = playerTokenEl.offsetTop;
+
+            const targetLeft = cell.offsetLeft + 2;
+            const targetTop = cell.offsetTop + cell.offsetHeight / 2 - playerTokenEl.offsetHeight / 2;
+
+            // 0 毫秒代表瞬移 (用於重設位置)
+            if (duration === 0) {
+                playerTokenEl.style.left = `${targetLeft}px`;
+                playerTokenEl.style.top = `${targetTop}px`;
+                if (onFinishCallback) onFinishCallback();
+                return;
+            }
+
+            playerTokenEl.animate([
+                { left: `${currentLeft}px`, top: `${currentTop}px` },
+                { left: `${targetLeft}px`, top: `${targetTop}px` }
+            ], {
+                duration: duration, // <--- 使用傳入的 duration
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                fill: 'forwards'
+            }).onfinish = () => {
+                playerTokenEl.style.left = `${targetLeft}px`;
+                playerTokenEl.style.top = `${targetTop}px`;
+
+                // <--- 執行傳入的 onFinishCallback
+                if (onFinishCallback) {
+                    onFinishCallback();
+                }
+            };
         }
+    }
+    // --- (NEW) 逐格移動玩家棋子 ---
+    function movePlayerStepByStep(stepsToMove, onCompleteAll) {
+        // 從全域狀態取得玩家和棋盤資料
+        const { player } = global.GameState;
+        const { boardPath, TOTAL_CELLS } = global.GameData;
+
+        // 設定每一格的移動速度 (毫秒)
+        const stepDuration = 250; // 0.25 秒
+
+        // 這是一個遞迴函數，會自己呼叫自己
+        function doMove() {
+            // 1. 檢查是否走完了
+            if (stepsToMove <= 0) {
+                if (onCompleteAll) onCompleteAll(); // 執行最終的回呼 (例如：觸發事件)
+                return; // 結束
+            }
+
+            // 2. 計算「下一步」的邏輯位置
+            // (注意：我們在這裡就更新全域的 player.position)
+            const newPosition = (player.position + 1) % TOTAL_CELLS;
+            player.position = newPosition;
+
+            // 3. 取得「下一步」的棋盤格 DOM 索引
+            const newBoardIndex = boardPath[newPosition];
+
+            // 4. 告訴計步器還剩下幾步
+            stepsToMove--;
+
+            // 5. 呼叫我們修改好的 movePlayerToken 工具
+            //    - 告訴它移動到 newBoardIndex
+            //    - 告訴它移動速度是 stepDuration (250ms)
+            //    - 告訴它「移動完這一格後，再次呼叫 doMove 函數」
+            movePlayerToken(newBoardIndex, stepDuration, doMove);
+        }
+
+        // 啟動第一步移動
+        doMove();
     }
 
     // --- 通用彈出視窗 ---
@@ -230,8 +322,7 @@
             if (card.choices) {
                 // ▼▼▼ 這是我們植入最終魔法的地方 ▼▼▼
 
-                // 1. 宣告一個變數，用來存放我們的「自動關閉」計時器
-                let autoCloseTimer = null;
+
 
                 const choice = card.choices[e.target.dataset.choiceIndex];
 
@@ -302,37 +393,84 @@
                 closeBtn.className = 'manual-close-btn';
                 closeBtn.textContent = '關閉';
                 closeBtn.onclick = () => {
-                    clearTimeout(autoCloseTimer); // 【關鍵！】按下時，取消自動關閉
+                    // 先關閉視窗
                     modalEl.classList.remove('show');
+
+                    // 👉 關鍵：視窗關閉後才開始數值變化動畫
+                    setTimeout(() => {
+                        // 1. 取得所有新舊數值
+                        const newMoney = global.GameState.player.money;
+                        const newExp = global.GameState.player.exp;
+                        const newCreativity = global.GameState.player.creativity;
+                        const newAttrs = global.GameState.player.attributes;
+
+                        // 2. 【✅ 手機版最終修正】建立一個「變化總結」陣列
+                        const changes = [];
+                        // 屬性表情符號 (確保與 game-data.js 一致)
+                        const attrEmoji = { peony: '🌺', lotus: '🪷', chrys: '🌼' };
+
+                        // 檢查主要數值變化
+                        if (newMoney !== oldMoney) changes.push(`💰花幣 ${newMoney > oldMoney ? '+' : ''}${newMoney - oldMoney}`);
+                        if (newExp !== oldExp) changes.push(`⭐經驗 ${newExp > oldExp ? '+' : ''}${newExp - oldExp}`);
+                        if (newCreativity !== oldCreativity) changes.push(`📖文思 ${newCreativity > oldCreativity ? '+' : ''}${newCreativity - oldCreativity}`);
+
+                        // 檢查屬性變化
+                        for (const attr in oldAttrs) {
+                            if (newAttrs[attr] !== oldAttrs[attr]) {
+                                // 加上表情符號和正負號
+                                changes.push(`${attrEmoji[attr]} ${newAttrs[attr] > oldAttrs[attr] ? '+' : ''}${newAttrs[attr] - oldAttrs[attr]}`);
+                            }
+                        }
+
+                        // 3. 如果有任何變化，就彈出提示 (Toast)
+                        if (changes.length > 0) {
+                            // 我們使用 3000 毫秒 (3秒)，讓玩家有足夠時間閱讀
+                            // "｜" 是一個分隔符號
+                            showToast(changes.join(' ｜ '), 3000);
+                        }
+
+                        // 4. 更新【電腦版】儀表板動畫 (這部分不變)
+                        flashStat($('#stat-money'), newMoney, oldMoney);
+                        flashStat($('#stat-exp'), newExp, oldExp);
+                        flashStat($('#stat-creativity'), newCreativity, oldCreativity);
+
+                        // 5. 更新【手機版 HUD】動畫 (這部分不變)
+                        flashStat(document.getElementById('hud-money'), newMoney, oldMoney);
+                        flashStat(document.getElementById('hud-exp'), newExp, oldExp);
+                        flashStat(document.getElementById('hud-creative'), newCreativity, oldCreativity);
+
+                        // 6. 更新【電腦版】屬性條動畫 (這部分不變)
+                        for (const attr in newAttrs) {
+                            if (newAttrs[attr] !== oldAttrs[attr]) {
+                                const value = Math.max(0, Math.min(100, newAttrs[attr]));
+                                const fillElement = $(`#attr-${attr} .attribute-fill`);
+                                if (fillElement) {
+                                    const parentDiv = fillElement.parentElement;
+                                    if (newAttrs[attr] > oldAttrs[attr]) {
+                                        parentDiv.classList.add('attr-flash-increase');
+                                    } else {
+                                        parentDiv.classList.add('attr-flash-decrease');
+                                    }
+                                    fillElement.style.width = `${value}%`;
+                                    setTimeout(() => {
+                                        parentDiv.classList.remove('attr-flash-increase', 'attr-flash-decrease');
+                                    }, 1500);
+                                }
+                            }
+                        }
+
+                        // 7. 更新儀表板（僅為了更新「庫存」）
+                        updatePlayerDashboard();
+
+                    }, 300); // 等待視窗關閉動畫完成
+
                     $('#dice-roll-btn').disabled = false;
-                    onChoice();
+                    onChoice(1800); // 傳入 1800 毫秒
                 };
                 eventContentEl.appendChild(closeBtn); // 將按鈕加入畫面
 
-                // 6. 執行「感官之石」的數值閃爍動畫
-                // 🔴【決策 Bug 修復】統一讀取 `global.GameState.player` 的新狀態
-                flashStat($('#stat-money'), global.GameState.player.money, oldMoney);
-                flashStat($('#stat-exp'), global.GameState.player.exp, oldExp);
-                flashStat($('#stat-creativity'), global.GameState.player.creativity, oldCreativity);
-                for (const attr in global.GameState.player.attributes) {
-                    if (global.GameState.player.attributes[attr] !== oldAttrs[attr]) {
-                        const value = Math.max(0, Math.min(100, global.GameState.player.attributes[attr]));
-                        const fillElement = $(`#attr-${attr} .attribute-fill`);
-                        if (fillElement) fillElement.style.width = `${value}%`;
-                    }
-                }
-                updateMobileHUD();
 
-                // 7. 將原本的「自動關閉」計時器存到我們的變數中
-                autoCloseTimer = setTimeout(() => {
-                    if (modalEl.classList.contains('show')) {
-                        modalEl.classList.remove('show');
-                        $('#dice-roll-btn').disabled = false;
-                        onChoice();
-                    }
-                }, 2500);
 
-                // ▲▲▲ 魔法結束 ▲▲▲
 
             } else {
                 modalEl.classList.remove('show');
@@ -1040,6 +1178,7 @@
         createBoard,
         updatePlayerDashboard,
         movePlayerToken,
+        movePlayerStepByStep, // <--- ✅ 在這裡加上新函數
         showEventModal,
         showMarketModal,
         showEndGameModal,
