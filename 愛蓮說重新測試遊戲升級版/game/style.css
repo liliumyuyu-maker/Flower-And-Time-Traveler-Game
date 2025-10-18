@@ -41,16 +41,21 @@ body {
 /* 2. 替換 body 背景為星空效果 */
 body {
     margin: 0;
-    font-family: "Noto Serif TC", /*...*/;
+    font-family: "Noto Serif TC",
+        /*...*/
+    ;
     background: var(--bg-dark);
     color: var(--ink);
     padding: 20px;
     overflow-x: hidden;
-    
+
     /* ▼▼▼ 魔法從這裡開始 ▼▼▼ */
-    display: grid; /* 使用 Grid 佈局 */
-    place-items: center; /* 垂直和水平都置中 */
-    min-height: 100vh; /* 確保 body 至少和螢幕一樣高 */
+    display: grid;
+    /* 使用 Grid 佈局 */
+    place-items: center;
+    /* 垂直和水平都置中 */
+    min-height: 100vh;
+    /* 確保 body 至少和螢幕一樣高 */
     /* ▲▲▲ 魔法結束 ▲▲▲ */
 }
 
@@ -60,15 +65,19 @@ body {
     display: grid;
     grid-template-columns: 1fr 340px;
     gap: 24px;
-    
+
     /* ▼▼▼ 這是我們的核心修正 ▼▼▼ */
-    width: 100%; /* 寬度佔滿可用空間 */
-    max-width: 1280px; /* 但最寬不超過 1280px */
-    
-    height: auto; /* 高度由內容自動決定，不再寫死 */
-    max-height: 95vh; /* 為了安全，最高不超過螢幕的95%，避免擠壓 */
+    width: 100%;
+    /* 寬度佔滿可用空間 */
+    max-width: 1280px;
+    /* 但最寬不超過 1280px */
+
+    height: auto;
+    /* 高度由內容自動決定，不再寫死 */
+    max-height: 95vh;
+    /* 為了安全，最高不超過螢幕的95%，避免擠壓 */
     /* ▲▲▲ 修正結束 ▲▲▲ */
-    
+
     position: relative;
     z-index: 1;
 }
@@ -89,9 +98,11 @@ body {
     /* 加上金色邊框 */
     overflow-y: auto;
 }
+
 /* ★★★★★ 最終版 Footer 遮擋修正 ★★★★★ */
 .main-panel {
-    padding-bottom: 80px; /* 為主面板增加足夠的底部空間 */
+    padding-bottom: 80px;
+    /* 為主面板增加足夠的底部空間 */
 }
 
 /* 微調側邊欄的 padding，讓它與主面板看起來更協調 */
@@ -228,23 +239,27 @@ h3 {
     pointer-events: none;
 }
 
-/* 翻新玩家棋子為「琉璃珠」風格 (清晰度微調版) */
+/* 翻新玩家棋子 */
 #player-token {
     position: absolute;
-    width: 34px;
-    height: 34px;
-    background: radial-gradient(circle at 30% 30%, #e8fff8, #34a37c);
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    border-radius: 50%;
-    box-shadow: 0 6px 15px rgba(16, 185, 129, .5), 0 0 0 4px rgba(255, 255, 255, .2);
-    transition: all 0.6s cubic-bezier(.4, 0, .2, 1);
     z-index: 10;
+    
+    /* ✅ 完全移除 transition，改用 JS 控制移動 */
+    /* transition 已刪除 */
 
-    /* ▼▼▼ 清晰度微調 ▼▼▼ */
-    opacity: 0.7;
-    /* 從 0.85 提升到 0.9，讓棋子更「實」一點 */
-    backdrop-filter: blur(0.4px);
-    /* 將模糊程度從 1px 減少到 0.5px，讓底下文字更銳利 */
+    width: 30px;  
+    height: 30px; 
+    background-image: url('./images/character.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    
+    /* ✅ 保留呼吸動畫（這個不會衝突） */
+    animation: breathe 2.5s ease-in-out infinite;
 }
 
 
@@ -1012,11 +1027,10 @@ button.special:hover {
 /* 2. 讓儀表板數字等寬對齊 (v2) */
 .stat-value {
     font-variant-numeric: tabular-nums;
-    /* 讓數字等寬 */
     text-align: center;
-    /* 改為置中對齊 */
     padding-right: 0;
-    /* 移除上次的右邊距 */
+    position: relative;  /* 👉 新增：讓浮動提示能正確定位 */
+    display: inline-block;  /* 👉 新增：確保變化提示不會跑版 */
 }
 
 /* --- 2025-10-10 結算視窗修正補丁 --- */
@@ -1078,15 +1092,14 @@ button.special:hover {
 
 /* ★★★★★【本次核心修改】★★★★★ */
 /* --- 最終版行動裝置修正補丁 v3.0 (包含橫式畫面、滑動、Footer問題) --- */
-@media (max-width: 1024px) {
 
-    /* 稍微擴大斷點，讓平版橫式也能吃到 */
+
+/* 稍微擴大斷點，讓平版橫式也能吃到 */
+@media (max-width: 1024px) {
     body {
-        /* 改為正常的由上到下佈局，永遠允許頁面滾動 */
         display: block;
-        padding: 10px;
-        /* 在底部增加足夠的留白，確保 Mobile HUD 和 Footer 不會擋住任何內容 */
-        
+        padding: 10px 10px 100px 10px;
+        /* 底部加大留白 */
     }
 
     /* 讓大廳和遊戲容器都能自由延伸 */
@@ -1103,8 +1116,9 @@ button.special:hover {
         /* 強制自動高度 */
     }
 
+    /* 確保主面板也有足夠的底部空間 */
     .main-panel {
-        order: 2;
+        padding-bottom: 100px !important;
     }
 
     .sidebar {
@@ -1154,11 +1168,15 @@ button.special:hover {
         grid-template-rows: auto 1fr;
         height: auto;
     }
+
     /* 手機版彈出視窗滑動修正 */
     .modal-dialog {
-        overflow-y: auto; /* 允許垂直滑動 */
-        max-height: 90vh; /* 最大高度為螢幕的 90% */
-        -webkit-overflow-scrolling: touch; /* iOS 滑動更順暢 */
+        overflow-y: auto;
+        /* 允許垂直滑動 */
+        max-height: 90vh;
+        /* 最大高度為螢幕的 90% */
+        -webkit-overflow-scrolling: touch;
+        /* iOS 滑動更順暢 */
     }
 }
 
@@ -1574,71 +1592,162 @@ button.special:hover,
 }
 
 /* --- 寶石 1: 數值變動的動態反饋 --- */
+/* --- 寶石 1: 數值變動的動態反饋（加強版） --- */
 @keyframes flash-green {
     0% {
-        transform: scale(1.2);
+        transform: scale(1.5);  /* 放更大 */
         color: #22c55e;
-        text-shadow: 0 0 10px #22c55e;
+        text-shadow: 0 0 20px #22c55e, 0 0 40px #22c55e;  /* 雙層光暈 */
+        background: rgba(34, 197, 94, 0.1);  /* 添加背景光 */
     }
-
+    50% {
+        transform: scale(1.3);
+        text-shadow: 0 0 15px #22c55e;
+    }
     100% {
         transform: scale(1);
         color: inherit;
         text-shadow: none;
+        background: transparent;
     }
 }
 
 @keyframes flash-red {
     0% {
-        transform: scale(1.2);
+        transform: scale(1.5);  /* 放更大 */
         color: #ef4444;
-        text-shadow: 0 0 10px #ef4444;
+        text-shadow: 0 0 20px #ef4444, 0 0 40px #ef4444;  /* 雙層光暈 */
+        background: rgba(239, 68, 68, 0.1);  /* 添加背景光 */
     }
-
+    50% {
+        transform: scale(1.3);
+        text-shadow: 0 0 15px #ef4444;
+    }
     100% {
         transform: scale(1);
         color: inherit;
         text-shadow: none;
+        background: transparent;
     }
 }
 
 .stat-flash-increase {
-    animation: flash-green 0.7s ease-out;
+    animation: flash-green 1.5s ease-out;  /* 從 0.7s 延長到 1.5s */
 }
 
 .stat-flash-decrease {
-    animation: flash-red 0.7s ease-out;
+    animation: flash-red 1.5s ease-out;  /* 從 0.7s 延長到 1.5s */
 }
+
+/* 👉 新增：浮動變化量提示動畫 */
+.stat-change-indicator {
+    position: absolute;
+    top: -10px;
+    right: -30px;
+    font-size: 14px;
+    font-weight: 900;
+    pointer-events: none;
+    animation: float-up 1.5s ease-out forwards;
+    z-index: 10;
+}
+
+.stat-change-indicator.positive {
+    color: #22c55e;
+    text-shadow: 0 0 10px #22c55e;
+}
+
+.stat-change-indicator.negative {
+    color: #ef4444;
+    text-shadow: 0 0 10px #ef4444;
+}
+
+@keyframes float-up {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-15px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.8);
+    }
+}
+
+/* 👉 新增：屬性條閃爍效果 */
+.attribute-bar {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.attr-flash-increase {
+    animation: attr-glow-green 1.5s ease-out;
+}
+
+.attr-flash-decrease {
+    animation: attr-glow-red 1.5s ease-out;
+}
+
+@keyframes attr-glow-green {
+    0%, 100% {
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .05);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.6), inset 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+}
+
+@keyframes attr-glow-red {
+    0%, 100% {
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .05);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6), inset 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+}
+
+
+
 /* =======================================================
    平板裝置縮放與佈局最終修正補丁 (The Final Patch)
    ======================================================= */
 @media (min-width: 768px) and (max-width: 1024px) {
-    
+
     /* 針對所有寬度介於 768px 到 1024px 的裝置 (主要是平板) 
        我們稍微放大基礎字體，這會讓所有使用相對單位(em/rem)的元素等比例放大。
        對於使用 px 的元素，這也能提供一個更好的基礎。
     */
     html {
-        font-size: 18px; /* 預設是 16px，我們稍微放大它 */
+        font-size: 18px;
+        /* 預設是 16px，我們稍微放大它 */
     }
 
     /* 強制讓遊戲容器在平板上也採用單欄佈局，
        並且讓它的高度能自然延伸，解決下方留白問題。
     */
     .game-container {
-        grid-template-columns: 1fr !important; /* 強制單欄！ */
-        height: auto !important; /* 高度自動！ */
-        max-height: none !important; /* 取消最大高度限制 */
+        grid-template-columns: 1fr !important;
+        /* 強制單欄！ */
+        height: auto !important;
+        /* 高度自動！ */
+        max-height: none !important;
+        /* 取消最大高度限制 */
     }
 }
+
 /* =======================================================
    按鈕呼吸燈引導效果 (The Guiding Light Patch)
    ======================================================= */
 @keyframes pulse-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 4px 16px rgba(0, 0, 0, .3), inset 0 2px 0 rgba(255, 255, 255, 0.1);
         transform: scale(1);
     }
+
     50% {
         box-shadow: 0 8px 30px rgba(52, 152, 219, .6), inset 0 2px 0 rgba(255, 255, 255, 0.1);
         transform: scale(1.02);
@@ -1648,12 +1757,15 @@ button.special:hover,
 #dice-roll-btn.is-active-turn {
     animation: pulse-glow 2s infinite ease-in-out;
 }
+
 /* =======================================================
    事件結果手動關閉按鈕樣式 (Manual Close Button Patch)
    ======================================================= */
 .manual-close-btn {
-    display: block; /* 讓按鈕獨佔一行 */
-    margin: 16px auto 0; /* 與上方結果文字的間距 */
+    display: block;
+    /* 讓按鈕獨佔一行 */
+    margin: 16px auto 0;
+    /* 與上方結果文字的間距 */
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 600;
@@ -1669,6 +1781,7 @@ button.special:hover,
     background: #e2e8f0;
     border-color: #94a3b8;
 }
+
 /* =======================================================
    決策回放 (Timeline) 樣式
    ======================================================= */
@@ -1676,7 +1789,8 @@ button.special:hover,
     margin-top: 20px;
     max-height: 60vh;
     overflow-y: auto;
-    padding-right: 15px; /* for scrollbar */
+    padding-right: 15px;
+    /* for scrollbar */
 }
 
 .timeline-item {
@@ -1720,7 +1834,8 @@ button.special:hover,
     margin-bottom: 12px;
 }
 
-.timeline-choice, .timeline-result {
+.timeline-choice,
+.timeline-result {
     background: #f8fafc;
     border: 1px solid #f1f5f9;
     padding: 10px 14px;
@@ -1734,20 +1849,24 @@ button.special:hover,
 }
 
 .timeline-result {
-    border-left: 4px solid #10b981; /* Green color for result */
+    border-left: 4px solid #10b981;
+    /* Green color for result */
 }
 
-.timeline-choice strong, .timeline-result strong {
+.timeline-choice strong,
+.timeline-result strong {
     color: var(--ink);
     margin-right: 8px;
 }
+
 /* =======================================================
    成就系統樣式 (Achievement System Patch)
    ======================================================= */
 .achievements-summary {
     margin-top: 24px;
     padding: 20px;
-    background: #fffbeb; /* 使用類似 .result-card.earned 的淡黃色 */
+    background: #fffbeb;
+    /* 使用類似 .result-card.earned 的淡黃色 */
     border-radius: 12px;
     border: 1px solid #fef3c7;
 }
@@ -1770,21 +1889,48 @@ button.special:hover,
     padding: 12px;
     border-radius: 10px;
     border: 1px solid #f1f5f9;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.2s;
 }
 
 .achievement-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .ach-emoji {
-    font-size: 24px; /* 放大 Emoji */
+    font-size: 24px;
+    /* 放大 Emoji */
 }
 
 .ach-name {
     font-size: 14px;
     font-weight: 600;
     color: var(--muted);
+}
+
+/* style.css (加在最末尾) */
+
+@keyframes breathe {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        /* 放大 10% */
+        opacity: 1;
+        /* 稍微變亮 */
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+}
+/* 讓庫存價格也能觸發浮動提示 */
+.inv-price {
+    position: relative;
+    display: inline-block;
 }
