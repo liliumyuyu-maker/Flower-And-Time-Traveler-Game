@@ -5,11 +5,11 @@
     const boardLayout = [
         'S', 'E', 'M', 'E', 'E', 'E', 'S',
         'E', null, null, null, null, null, 'E',
-        'M', null, null, null, null, null, 'E',
+        'E', null, null, null, null, null, 'E',
         'E', null, null, null, null, null, 'M',
         'E', null, null, null, null, null, 'E',
         'M', null, null, null, null, null, 'E',
-        'S', 'E', 'M', 'E', 'E', 'E', 'S'
+        'S', 'E', 'M', 'E', 'E', 'E', 'E'
     ];
     // 棋盤的路徑順序（完整外圈 24 格，依序繞一圈）
     const boardPath = [
@@ -317,7 +317,7 @@
                     effect: (p) => {
                         p.attributes.lotus += 10;
                         p.exp += 5;
-                        return '你看到了政策背後 long 遠的代價，思考更為周全。自守+10、經驗+5。';
+                        return '你看到了政策背後長遠的代價，思考更為周全。自守+10、經驗+5。';
                     }
                 }
             ]
@@ -450,37 +450,50 @@
 
     // ▼▼▼ 請用這段完整的 _fallbackGetRandomEvent 函數，取代掉舊的 ▼▼▼
     function _fallbackGetRandomEvent() {
-        // ✅ 修正：即使 GameState 未完全初始化，也要確保基本結構存在
-        if (!global.GameState) global.GameState = {};
-        if (!global.GameState.gameState) global.GameState.gameState = {};
-        if (!global.GameState.gameState.usedEventTitles) {
-            global.GameState.gameState.usedEventTitles = [];
-        }
-
-        const usedTitles = global.GameState.gameState.usedEventTitles;
-        let availableCards = mergedEventDeck.filter(card => !usedTitles.includes(card.title));
-
-        if (availableCards.length === 0) {
-            console.log("事件牌庫已用完，正在重置和洗牌...");
-            global.GameState.gameState.usedEventTitles = [];
-            availableCards = mergedEventDeck;
-
-            // Fisher–Yates 洗牌
-            for (let i = availableCards.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [availableCards[i], availableCards[j]] = [availableCards[j], availableCards[i]];
-            }
-            console.log("事件牌庫已重置!");
-        }
-
-        // ✅ 修正：從剩餘的可抽卡中抽一張，並立即標記為已使用
-        const selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-        if (selectedCard.title) {
-            global.GameState.gameState.usedEventTitles.push(selectedCard.title);
-        }
-
-        return selectedCard;
+    if (!global.GameState.gameState.usedEventTitles) {
+        global.GameState.gameState.usedEventTitles = [];
     }
+    if (!global.GameState.gameState.recentEventTitles) {
+        global.GameState.gameState.recentEventTitles = []; // 新增：記憶最近的卡
+    }
+    
+    const usedTitles = global.GameState.gameState.usedEventTitles;
+    const recentTitles = global.GameState.gameState.recentEventTitles;
+    
+    // 排除最近 5 張卡
+    let availableCards = mergedEventDeck.filter(card => 
+        !usedTitles.includes(card.title) && 
+        !recentTitles.includes(card.title)
+    );
+    
+    if (availableCards.length === 0) {
+        console.log("牌庫重置，但保留最近記憶...");
+        global.GameState.gameState.usedEventTitles = [];
+        availableCards = mergedEventDeck.filter(card => 
+            !recentTitles.includes(card.title)
+        );
+        
+        // 洗牌
+        for (let i = availableCards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [availableCards[i], availableCards[j]] = [availableCards[j], availableCards[i]];
+        }
+    }
+    
+    const selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+    
+    if (selectedCard.title) {
+        global.GameState.gameState.usedEventTitles.push(selectedCard.title);
+        
+        // 更新最近記憶（保留最新 5 張）
+        recentTitles.push(selectedCard.title);
+        if (recentTitles.length > 5) {
+            recentTitles.shift();
+        }
+    }
+    
+    return selectedCard;
+}
     // ▲▲▲ 取代結束 ▲▲▲
     const finalGetRandomEvent = _origGetRandomEvent || _fallbackGetRandomEvent;
 
