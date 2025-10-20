@@ -590,9 +590,38 @@
             draftTextarea.placeholder = "✍️ 請在這裡修改或重寫你的感悟...\n\n💡 你可以分享：\n- 你做了哪些選擇？\n- 為什麼這樣選？\n- 你對品格的想法？";
         }
 
-        $('#upload-btn').onclick = onUpload;
+    
+        // 🆕 更嚴格版本：強制最少字數
+        $('#upload-btn').onclick = () => {
+            const draftTextarea = $('#creation-draft-textarea');
+            const currentText = draftTextarea.value.trim();
+            const defaultText = buildWorkDraftForUpload().trim();
+            const MIN_LENGTH = 20; // 設定最少字數
+
+            // 完全沒改 → 直接拒絕
+            if (currentText === defaultText) {
+                alert('❌ 請修改預設內容後再上傳！');
+                draftTextarea.focus();
+                return;
+            }
+
+            // 字數太少 → 直接拒絕
+            if (currentText.length < MIN_LENGTH) {
+                alert(`❌ 創作內容太短了！請至少寫 ${MIN_LENGTH} 字。\n目前只有 ${currentText.length} 字。`);
+                draftTextarea.focus();
+                return;
+            }
+
+            // 通過所有檢查
+            onUpload();
+        };
         $('#replay-btn').onclick = onShowReplay; // <-- 綁定新按鈕的事件
-        $('#restart-btn').onclick = () => window.location.reload();
+        $('#restart-btn').onclick = () => {
+            if (confirm('確定要放棄所有進度，重新開始一局嗎？')) {
+                localStorage.removeItem('savedGameState'); // <-- ✅ 清除暫存
+                window.location.reload();
+            }
+        };
 
         // 【✅ 核心優化】在結算畫面出現後，延遲一秒彈出引導提示
         setTimeout(() => {
@@ -724,6 +753,8 @@
                     localStorage.removeItem('isSpectator');
                     localStorage.removeItem('spectatingRoomId');
                     console.log('已清除觀戰狀態。');
+                    localStorage.removeItem('savedGameState'); // <-- ✅ 離開雅集時，清除遊戲進度
+                    console.log('已清除遊戲進度。');
                 }
 
                 leaderboardModalEl.classList.remove('show');
