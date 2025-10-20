@@ -1,4 +1,50 @@
 (function (global) {
+    // --- (NEW) 暫存機制 ---
+    function saveGameState() {
+        try {
+            // 我們只儲存核心進度，不儲存玩家名稱 (因為名稱是從大廳來的)
+            const stateToSave = {
+                player: global.GameState.player,
+                market: global.GameState.market,
+                gameState: global.GameState.gameState
+            };
+            localStorage.setItem('savedGameState', JSON.stringify(stateToSave));
+            console.log('Game state saved.');
+        } catch (e) {
+            console.error('Failed to save game state:', e);
+        }
+    }
+
+    function loadGameState() {
+        try {
+            const savedState = localStorage.getItem('savedGameState');
+            if (savedState) {
+                const loadedState = JSON.parse(savedState);
+
+                // 【✅ 核心】只還原遊戲進度，不覆蓋身分
+                global.GameState.player.position = loadedState.player.position;
+                global.GameState.player.money = loadedState.player.money;
+                global.GameState.player.exp = loadedState.player.exp;
+                global.GameState.player.creativity = loadedState.player.creativity;
+                global.GameState.player.attributes = loadedState.player.attributes;
+                global.GameState.player.inventory = loadedState.player.inventory;
+                global.GameState.player.history = loadedState.player.history;
+
+                global.GameState.market.prices = loadedState.market.prices;
+
+                global.GameState.gameState.turn = loadedState.gameState.turn;
+                global.GameState.gameState.usedEventTitles = loadedState.gameState.usedEventTitles;
+
+                console.log('Game state loaded from save.');
+                return true;
+            }
+        } catch (e) {
+            console.error('Failed to load game state:', e);
+            localStorage.removeItem('savedGameState'); // 清除損壞的資料
+        }
+        return false; // 沒有載入存檔
+    }
+    // --- 暫存機制結束 ---
     'use strict';
 
     // --- 依賴注入 ---
@@ -236,6 +282,7 @@
         diceBtn.disabled = false;
         // ▼▼▼ 在這裡加上一行，開始發光 ▼▼▼
         diceBtn.classList.add('is-active-turn');
+        saveGameState(); // <-- ✅ 在回合結束時自動儲存進度
     }
     // --- 遊戲結束與多人模式啟動 ---
     // main.js
@@ -401,10 +448,14 @@
 
     // --- 遊戲啟動流程 ---
     function startGame(playerName, roomId) {
+        const saveLoaded = loadGameState();
         document.getElementById('bgm').play().catch(e => console.warn("音樂自動播放失敗，需等待使用者再次互動。"));
         lobbyContainer.style.display = 'none';
         gameContainer.classList.remove('hidden');
         player.name = playerName;
+        if (saveLoaded) {
+            UIManager.showToast('✅ 偵測到上次的進度，已為您自動載入！', 3000);
+        }
         currentRoomId = roomId; // 將房間號存到本檔案的變數中
         global.GameState.roomId = roomId; // 也存一份到全域狀態，讓 ui-manager 能讀取
 
